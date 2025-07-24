@@ -268,7 +268,7 @@ class BackendTester:
                     "type": "audio_data",
                     "audio_data": self.create_mock_audio_base64(),
                     "provider": "groq",
-                    "model": "mixtral-8x7b-32768"
+                    "model": "llama-3.1-8b-instant"
                 }
                 
                 await websocket.send(json.dumps(test_message))
