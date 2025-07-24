@@ -41,8 +41,14 @@ MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017/autoresponder")
 client = AsyncIOMotorClient(MONGO_URL)
 db = client.autoresponder
 
-# OpenAI client for Whisper
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# OpenAI client for Whisper (optional)
+openai_client = None
+openai_api_key = os.getenv("OPENAI_API_KEY")
+if openai_api_key:
+    openai_client = OpenAI(api_key=openai_api_key)
+    logger.info("OpenAI Whisper client initialized")
+else:
+    logger.warning("OpenAI API key not found. Whisper transcription will use fallback method.")
 
 # Available models for each provider
 AVAILABLE_MODELS = {
