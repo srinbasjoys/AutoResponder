@@ -88,7 +88,7 @@ class BackendTester:
             provider_data = {
                 "name": "groq",
                 "api_key": "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",
-                "model": "mixtral-8x7b-32768"
+                "model": "llama-3.1-8b-instant"
             }
             
             response = requests.post(f"{API_BASE}/providers", 
