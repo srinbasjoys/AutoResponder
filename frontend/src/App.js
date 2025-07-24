@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Settings, MessageCircle, Brain, Zap } from 'lucide-react';
+import { Mic, MicOff, Settings, MessageCircle, Brain, Zap, Trash2, ChevronDown } from 'lucide-react';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
@@ -8,20 +8,49 @@ function App() {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [conversations, setConversations] = useState([]);
-  const [currentProvider, setCurrentProvider] = useState('openai');
+  const [currentProvider, setCurrentProvider] = useState('groq');
+  const [currentModel, setCurrentModel] = useState('mixtral-8x7b-32768');
   const [providers, setProviders] = useState([]);
+  const [availableModels, setAvailableModels] = useState({});
   const [showSettings, setShowSettings] = useState(false);
   const [sessionId] = useState(() => `session_${Date.now()}`);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [transcribedText, setTranscribedText] = useState('');
   
   const mediaRecorderRef = useRef(null);
   const recordingTimerRef = useRef(null);
   const streamRef = useRef(null);
 
   useEffect(() => {
+    fetchAvailableModels();
     fetchProviders();
     fetchConversations();
+    // Set up Groq as default with API key
+    setupDefaultProvider();
   }, []);
+
+  const setupDefaultProvider = async () => {
+    try {
+      // Set up Groq with the provided API key for testing
+      await axios.post(`${BACKEND_URL}/api/providers`, {
+        name: 'groq',
+        api_key: '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',
+        model: 'mixtral-8x7b-32768'
+      });
+      console.log('Default Groq provider set up successfully');
+    } catch (error) {
+      console.error('Error setting up default provider:', error);
+    }
+  };
+
+  const fetchAvailableModels = async () => {
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/models`);
+      setAvailableModels(response.data.models);
+    } catch (error) {
+      console.error('Error fetching available models:', error);
+    }
+  };
 
   const fetchProviders = async () => {
     try {
@@ -38,6 +67,15 @@ function App() {
       setConversations(response.data.conversations);
     } catch (error) {
       console.error('Error fetching conversations:', error);
+    }
+  };
+
+  const clearConversations = async () => {
+    try {
+      await axios.delete(`${BACKEND_URL}/api/conversations/${sessionId}`);
+      setConversations([]);
+    } catch (error) {
+      console.error('Error clearing conversations:', error);
     }
   };
 
@@ -70,6 +108,7 @@ function App() {
       mediaRecorder.start();
       setIsRecording(true);
       setRecordingTime(0);
+      setTranscribedText('');
       
       // Start timer
       recordingTimerRef.current = setInterval(() => {
@@ -103,8 +142,12 @@ function App() {
       const response = await axios.post(`${BACKEND_URL}/api/process-audio`, {
         audio_data: audioData,
         session_id: sessionId,
-        provider: currentProvider
+        provider: currentProvider,
+        model: currentModel
       });
+      
+      // Set transcribed text
+      setTranscribedText(response.data.user_input);
       
       // Add new conversation to the list
       setConversations(prev => [...prev, response.data]);
@@ -143,12 +186,21 @@ function App() {
                 AI Assistant
               </span>
             </div>
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <Settings className="w-5 h-5 text-gray-600" />
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={clearConversations}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Clear Conversation"
+              >
+                <Trash2 className="w-5 h-5 text-gray-600" />
+              </button>
+              <button
+                onClick={() => setShowSettings(!showSettings)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <Settings className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -166,6 +218,48 @@ function App() {
                 <p className="text-gray-600">
                   Hold the button to record up to 30 seconds of audio
                 </p>
+              </div>
+
+              {/* Model Selection */}
+              <div className="mb-8">
+                <div className="flex flex-wrap gap-4 justify-center">
+                  <div className="flex items-center space-x-2">
+                    <label className="text-sm font-medium text-gray-700">Provider:</label>
+                    <select
+                      value={currentProvider}
+                      onChange={(e) => {
+                        setCurrentProvider(e.target.value);
+                        // Reset to first available model for new provider
+                        const models = availableModels[e.target.value] || [];
+                        if (models.length > 0) {
+                          setCurrentModel(models[0]);
+                        }
+                      }}
+                      className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                    >
+                      {Object.keys(availableModels).map(provider => (
+                        <option key={provider} value={provider} className="capitalize">
+                          {provider}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <label className="text-sm font-medium text-gray-700">Model:</label>
+                    <select
+                      value={currentModel}
+                      onChange={(e) => setCurrentModel(e.target.value)}
+                      className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                    >
+                      {(availableModels[currentProvider] || []).map(model => (
+                        <option key={model} value={model}>
+                          {model}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
 
               {/* Recording Interface */}
@@ -209,7 +303,7 @@ function App() {
                 </div>
 
                 {/* Status Text */}
-                <div className="text-center">
+                <div className="text-center min-h-12">
                   {isProcessing && (
                     <div className="flex items-center justify-center space-x-2 text-blue-600">
                       <Zap className="w-4 h-4 animate-pulse" />
@@ -233,6 +327,15 @@ function App() {
                       Press and hold to start recording
                     </p>
                   )}
+                  
+                  {/* Show transcribed text */}
+                  {transcribedText && !isProcessing && (
+                    <div className="mt-2 p-3 bg-blue-50 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        <strong>You said:</strong> "{transcribedText}"
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Current Provider */}
@@ -240,7 +343,7 @@ function App() {
                   <Brain className="w-4 h-4 text-gray-600" />
                   <span className="text-sm text-gray-600">Current AI:</span>
                   <span className="text-sm font-medium text-gray-900 capitalize">
-                    {currentProvider}
+                    {currentProvider} / {currentModel}
                   </span>
                 </div>
               </div>
@@ -250,11 +353,14 @@ function App() {
           {/* Conversation History */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-lg p-6">
-              <div className="flex items-center space-x-2 mb-6">
-                <MessageCircle className="w-5 h-5 text-blue-500" />
-                <h3 className="text-xl font-semibold text-gray-900">
-                  Conversation
-                </h3>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-2">
+                  <MessageCircle className="w-5 h-5 text-blue-500" />
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    Conversation
+                  </h3>
+                </div>
+                <span className="text-xs text-gray-500">Last 5 interactions</span>
               </div>
               
               <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -271,6 +377,9 @@ function App() {
                       <div className="bg-blue-50 p-3 rounded-lg">
                         <p className="text-sm text-gray-700">
                           <strong>You:</strong> {conv.user_input}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {conv.provider} / {conv.model}
                         </p>
                       </div>
                       <div className="bg-gray-50 p-3 rounded-lg">
@@ -290,8 +399,11 @@ function App() {
         {showSettings && (
           <SettingsPanel
             providers={providers}
+            availableModels={availableModels}
             currentProvider={currentProvider}
+            currentModel={currentModel}
             onProviderChange={setCurrentProvider}
+            onModelChange={setCurrentModel}
             onProviderSave={handleProviderSave}
             onClose={() => setShowSettings(false)}
           />
@@ -302,18 +414,19 @@ function App() {
 }
 
 // Settings Panel Component
-function SettingsPanel({ providers, currentProvider, onProviderChange, onProviderSave, onClose }) {
+function SettingsPanel({ 
+  providers, 
+  availableModels,
+  currentProvider, 
+  currentModel,
+  onProviderChange, 
+  onModelChange,
+  onProviderSave, 
+  onClose 
+}) {
   const [selectedProvider, setSelectedProvider] = useState(currentProvider);
+  const [selectedModel, setSelectedModel] = useState(currentModel);
   const [apiKey, setApiKey] = useState('');
-  const [model, setModel] = useState('');
-
-  const providerOptions = [
-    { name: 'openai', label: 'OpenAI', models: ['gpt-3.5-turbo', 'gpt-4'] },
-    { name: 'groq', label: 'Groq', models: ['mixtral-8x7b-32768', 'llama2-70b-4096'] },
-    { name: 'anthropic', label: 'Anthropic (Claude)', models: ['claude-3-sonnet', 'claude-3-haiku'] },
-    { name: 'perplexity', label: 'Perplexity', models: ['llama-3.1-sonar-small-128k-online'] },
-    { name: 'ollama', label: 'Ollama (Local)', models: ['llama2', 'mistral', 'codellama'] }
-  ];
 
   const handleSave = () => {
     if (!apiKey.trim()) {
@@ -324,22 +437,22 @@ function SettingsPanel({ providers, currentProvider, onProviderChange, onProvide
     onProviderSave({
       name: selectedProvider,
       api_key: apiKey,
-      model: model
+      model: selectedModel
     });
 
     onProviderChange(selectedProvider);
+    onModelChange(selectedModel);
     setApiKey('');
-    setModel('');
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+      <div className="bg-white rounded-2xl p-8 max-w-lg w-full mx-4 max-h-90vh overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-2xl font-bold text-gray-900">AI Provider Settings</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 text-2xl"
           >
             ×
           </button>
@@ -353,12 +466,37 @@ function SettingsPanel({ providers, currentProvider, onProviderChange, onProvide
             </label>
             <select
               value={selectedProvider}
-              onChange={(e) => setSelectedProvider(e.target.value)}
+              onChange={(e) => {
+                setSelectedProvider(e.target.value);
+                // Reset to first available model for new provider
+                const models = availableModels[e.target.value] || [];
+                if (models.length > 0) {
+                  setSelectedModel(models[0]);
+                }
+              }}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              {providerOptions.map(provider => (
-                <option key={provider.name} value={provider.name}>
-                  {provider.label}
+              {Object.keys(availableModels).map(provider => (
+                <option key={provider} value={provider} className="capitalize">
+                  {provider}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Model Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Select Model
+            </label>
+            <select
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              {(availableModels[selectedProvider] || []).map(model => (
+                <option key={model} value={model}>
+                  {model}
                 </option>
               ))}
             </select>
@@ -376,26 +514,9 @@ function SettingsPanel({ providers, currentProvider, onProviderChange, onProvide
               placeholder="Enter your API key"
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-          </div>
-
-          {/* Model Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Model (Optional)
-            </label>
-            <select
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Select a model</option>
-              {providerOptions
-                .find(p => p.name === selectedProvider)
-                ?.models.map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))
-              }
-            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Your API key will be securely stored and used for AI responses.
+            </p>
           </div>
 
           {/* Save Button */}
@@ -408,11 +529,16 @@ function SettingsPanel({ providers, currentProvider, onProviderChange, onProvide
 
           {/* Current Providers Status */}
           <div className="border-t pt-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Configured Providers:</h4>
-            <div className="space-y-1">
+            <h4 className="text-sm font-medium text-gray-700 mb-3">Configured Providers:</h4>
+            <div className="space-y-2">
               {providers.map(provider => (
-                <div key={provider.name} className="flex items-center justify-between text-sm">
-                  <span className="capitalize">{provider.name}</span>
+                <div key={provider.name} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
+                  <div>
+                    <span className="capitalize font-medium">{provider.name}</span>
+                    {provider.model && (
+                      <span className="text-gray-500 ml-2">({provider.model})</span>
+                    )}
+                  </div>
                   <span className={`px-2 py-1 rounded text-xs ${
                     provider.configured 
                       ? 'bg-green-100 text-green-800' 
