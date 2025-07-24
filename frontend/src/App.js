@@ -9,7 +9,7 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [currentProvider, setCurrentProvider] = useState('groq');
-  const [currentModel, setCurrentModel] = useState('mixtral-8x7b-32768');
+  const [currentModel, setCurrentModel] = useState('llama-3.1-8b-instant');
   const [providers, setProviders] = useState([]);
   const [availableModels, setAvailableModels] = useState({});
   const [showSettings, setShowSettings] = useState(false);
