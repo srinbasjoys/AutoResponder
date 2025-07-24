@@ -196,7 +196,11 @@ async def get_conversation(session_id: str, limit: int = 5):
         raise HTTPException(status_code=500, detail="Failed to fetch conversation")
 
 async def transcribe_audio_with_whisper(audio_data: str) -> str:
-    """Transcribe audio using OpenAI Whisper"""
+    """Transcribe audio using OpenAI Whisper or fallback method"""
+    if openai_client is None:
+        logger.info("OpenAI client not available, using fallback transcription")
+        return await transcribe_audio_fallback(audio_data)
+    
     try:
         # Decode base64 audio
         audio_bytes = base64.b64decode(audio_data)
