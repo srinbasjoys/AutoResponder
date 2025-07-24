@@ -66,7 +66,7 @@ AVAILABLE_MODELS = {
         "gemini-1.5-flash-8b", "gemini-1.5-pro"
     ],
     "groq": [
-        "mixtral-8x7b-32768", "llama2-70b-4096", "llama-3.1-70b-versatile", "llama-3.1-8b-instant"
+        "llama-3.3-70b-versatile", "llama-3.1-8b-instant", "gemma2-9b-it", "llama-guard-3-8b"
     ]
 }
 
