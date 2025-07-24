@@ -183,7 +183,7 @@ class BackendTester:
                 "audio_data": mock_audio,
                 "session_id": self.session_id,
                 "provider": "groq",
-                "model": "mixtral-8x7b-32768"
+                "model": "llama-3.1-8b-instant"
             }
             
             response = requests.post(f"{API_BASE}/process-audio", 
