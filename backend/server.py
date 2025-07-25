@@ -1,5 +1,6 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import json
 import os
@@ -18,6 +19,8 @@ import speech_recognition as sr
 from pydub import AudioSegment
 import io
 from duckduckgo_search import DDGS
+import pyttsx3
+import threading
 
 # Load environment variables
 load_dotenv()
