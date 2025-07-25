@@ -24,9 +24,15 @@ function App() {
   const [includeWebSearch, setIncludeWebSearch] = useState(false);
   const [showSearchTab, setShowSearchTab] = useState(false);
   
+  // Text-to-speech states
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [autoSpeak, setAutoSpeak] = useState(true);
+  const [currentAudio, setCurrentAudio] = useState(null);
+  
   const mediaRecorderRef = useRef(null);
   const recordingTimerRef = useRef(null);
   const streamRef = useRef(null);
+  const audioRef = useRef(null);
 
   useEffect(() => {
     fetchAvailableModels();
