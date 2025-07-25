@@ -392,37 +392,33 @@ async def clear_conversation(session_id: str):
         logger.error(f"Error clearing conversation: {e}")
         raise HTTPException(status_code=500, detail="Failed to clear conversation")
 
+import subprocess
+
 async def generate_speech(text: str, voice_speed: int = 150, voice_pitch: int = 0) -> bytes:
-    """Generate speech audio from text using pyttsx3"""
+    """Generate speech audio from text using espeak directly"""
     def text_to_speech():
         try:
-            # Create a new engine instance for this thread
-            engine = pyttsx3.init()
-            
-            # Set voice properties more safely
-            try:
-                voices = engine.getProperty('voices')
-                if voices and len(voices) > 0:
-                    # Use first available voice
-                    engine.setProperty('voice', voices[0].id)
-            except Exception as e:
-                logger.warning(f"Could not set voice: {e}")
-                # Continue without setting voice
-            
-            # Set speech rate (words per minute)
-            try:
-                engine.setProperty('rate', voice_speed)
-            except Exception as e:
-                logger.warning(f"Could not set speech rate: {e}")
-            
             # Create temporary file for audio output
             temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.wav')
             temp_filename = temp_file.name
             temp_file.close()
             
-            # Save to temporary file
-            engine.save_to_file(text, temp_filename)
-            engine.runAndWait()
+            # Use espeak directly for more reliable TTS
+            cmd = [
+                'espeak',
+                '-w', temp_filename,  # Write to wav file
+                '-s', str(voice_speed),  # Speed (words per minute)
+                '-p', str(50 + voice_pitch),  # Pitch (0-99, default ~50)
+                '-a', '100',  # Amplitude (volume)
+                text
+            ]
+            
+            # Run espeak command
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            
+            if result.returncode != 0:
+                logger.error(f"espeak failed with return code {result.returncode}: {result.stderr}")
+                return None
             
             # Check if file was created and has content
             if not os.path.exists(temp_filename):
@@ -442,9 +438,12 @@ async def generate_speech(text: str, voice_speed: int = 150, voice_pitch: int = 
             # Clean up temporary file
             os.unlink(temp_filename)
             
-            logger.info(f"Successfully generated {len(audio_data)} bytes of audio")
+            logger.info(f"Successfully generated {len(audio_data)} bytes of audio using espeak")
             return audio_data
             
+        except subprocess.TimeoutExpired:
+            logger.error("espeak command timed out")
+            return None
         except Exception as e:
             logger.error(f"Error in text-to-speech generation: {e}")
             return None
