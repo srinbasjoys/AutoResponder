@@ -392,6 +392,82 @@ async def clear_conversation(session_id: str):
         logger.error(f"Error clearing conversation: {e}")
         raise HTTPException(status_code=500, detail="Failed to clear conversation")
 
+async def generate_speech(text: str, voice_speed: int = 150, voice_pitch: int = 0) -> bytes:
+    """Generate speech audio from text using pyttsx3"""
+    def text_to_speech():
+        try:
+            # Create a new engine instance for this thread
+            engine = pyttsx3.init()
+            
+            # Set voice properties
+            voices = engine.getProperty('voices')
+            if voices:
+                # Use first available voice
+                engine.setProperty('voice', voices[0].id)
+            
+            # Set speech rate (words per minute)
+            engine.setProperty('rate', voice_speed)
+            
+            # Create temporary file for audio output
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.wav')
+            temp_filename = temp_file.name
+            temp_file.close()
+            
+            # Save to temporary file
+            engine.save_to_file(text, temp_filename)
+            engine.runAndWait()
+            
+            # Read the generated audio file
+            with open(temp_filename, 'rb') as f:
+                audio_data = f.read()
+            
+            # Clean up temporary file
+            os.unlink(temp_filename)
+            
+            return audio_data
+            
+        except Exception as e:
+            logger.error(f"Error in text-to-speech generation: {e}")
+            return None
+    
+    # Run TTS in a separate thread to avoid blocking
+    loop = asyncio.get_event_loop()
+    audio_data = await loop.run_in_executor(None, text_to_speech)
+    
+    return audio_data
+
+@app.post("/api/text-to-speech")
+async def text_to_speech_endpoint(request: TextToSpeechRequest):
+    """Convert text to speech and return audio data"""
+    try:
+        logger.info(f"Generating speech for text: {request.text[:50]}...")
+        
+        if not request.text.strip():
+            raise HTTPException(status_code=400, detail="Text cannot be empty")
+        
+        # Generate speech audio
+        audio_data = await generate_speech(request.text, request.voice_speed, request.voice_pitch)
+        
+        if audio_data is None:
+            raise HTTPException(status_code=500, detail="Failed to generate speech")
+        
+        # Return audio as streaming response
+        def generate_audio():
+            yield audio_data
+        
+        return StreamingResponse(
+            generate_audio(),
+            media_type="audio/wav",
+            headers={
+                "Content-Disposition": "attachment; filename=speech.wav",
+                "Access-Control-Allow-Origin": "*"
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in text-to-speech endpoint: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate speech: {str(e)}")
+
 async def perform_web_search(query: str, max_results: int = 5) -> List[Dict]:
     """Perform web search using DuckDuckGo"""
     try:
