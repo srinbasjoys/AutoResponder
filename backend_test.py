@@ -256,6 +256,237 @@ class BackendTester:
         except Exception as e:
             self.log_test("Clear Conversation", False, f"Exception: {str(e)}")
             return False
+
+    def test_web_search(self):
+        """Test POST /api/search"""
+        try:
+            search_request = {
+                "query": "latest AI developments 2025",
+                "max_results": 3
+            }
+            
+            response = requests.post(f"{API_BASE}/search", 
+                                   json=search_request, 
+                                   timeout=15)
+            
+            if response.status_code == 200:
+                data = response.json()
+                required_fields = ["query", "results", "count"]
+                if all(field in data for field in required_fields):
+                    if isinstance(data["results"], list) and len(data["results"]) > 0:
+                        # Check if results have proper structure
+                        result = data["results"][0]
+                        result_fields = ["title", "body", "url", "source"]
+                        if all(field in result for field in result_fields):
+                            self.log_test("Web Search", True, f"Found {data['count']} search results from DuckDuckGo")
+                            return True
+                        else:
+                            missing_fields = [f for f in result_fields if f not in result]
+                            self.log_test("Web Search", False, f"Missing fields in search result: {missing_fields}")
+                            return False
+                    else:
+                        self.log_test("Web Search", False, "No search results returned")
+                        return False
+                else:
+                    missing_fields = [f for f in required_fields if f not in data]
+                    self.log_test("Web Search", False, f"Missing fields: {missing_fields}")
+                    return False
+            else:
+                self.log_test("Web Search", False, f"HTTP {response.status_code}: {response.text}")
+                return False
+        except Exception as e:
+            self.log_test("Web Search", False, f"Exception: {str(e)}")
+            return False
+
+    def test_web_search_with_ai(self):
+        """Test POST /api/search-with-ai"""
+        try:
+            search_ai_request = {
+                "query": "What are the benefits of AI in healthcare?",
+                "session_id": self.session_id,
+                "provider": "groq",
+                "model": "llama-3.1-8b-instant",
+                "max_results": 3,
+                "include_search": True
+            }
+            
+            response = requests.post(f"{API_BASE}/search-with-ai", 
+                                   json=search_ai_request, 
+                                   timeout=30)
+            
+            if response.status_code == 200:
+                data = response.json()
+                required_fields = ["id", "query", "ai_response", "search_results", "provider", "model"]
+                if all(field in data for field in required_fields):
+                    if data["ai_response"] and len(data["ai_response"]) > 0:
+                        if isinstance(data["search_results"], list) and len(data["search_results"]) > 0:
+                            self.log_test("Web Search with AI", True, f"AI response with {len(data['search_results'])} search results")
+                            return True
+                        else:
+                            self.log_test("Web Search with AI", False, "No search results included")
+                            return False
+                    else:
+                        self.log_test("Web Search with AI", False, "Empty AI response")
+                        return False
+                else:
+                    missing_fields = [f for f in required_fields if f not in data]
+                    self.log_test("Web Search with AI", False, f"Missing fields: {missing_fields}")
+                    return False
+            else:
+                self.log_test("Web Search with AI", False, f"HTTP {response.status_code}: {response.text}")
+                return False
+        except Exception as e:
+            self.log_test("Web Search with AI", False, f"Exception: {str(e)}")
+            return False
+
+    def test_web_search_with_ai_no_search(self):
+        """Test POST /api/search-with-ai with include_search=false"""
+        try:
+            search_ai_request = {
+                "query": "Explain quantum computing in simple terms",
+                "session_id": self.session_id,
+                "provider": "groq", 
+                "model": "llama-3.1-8b-instant",
+                "max_results": 3,
+                "include_search": False
+            }
+            
+            response = requests.post(f"{API_BASE}/search-with-ai", 
+                                   json=search_ai_request, 
+                                   timeout=30)
+            
+            if response.status_code == 200:
+                data = response.json()
+                required_fields = ["id", "query", "ai_response", "search_results", "provider", "model"]
+                if all(field in data for field in required_fields):
+                    if data["ai_response"] and len(data["ai_response"]) > 0:
+                        if len(data["search_results"]) == 0:
+                            self.log_test("Web Search with AI (No Search)", True, "AI response without search results")
+                            return True
+                        else:
+                            self.log_test("Web Search with AI (No Search)", False, "Search results included when include_search=false")
+                            return False
+                    else:
+                        self.log_test("Web Search with AI (No Search)", False, "Empty AI response")
+                        return False
+                else:
+                    missing_fields = [f for f in required_fields if f not in data]
+                    self.log_test("Web Search with AI (No Search)", False, f"Missing fields: {missing_fields}")
+                    return False
+            else:
+                self.log_test("Web Search with AI (No Search)", False, f"HTTP {response.status_code}: {response.text}")
+                return False
+        except Exception as e:
+            self.log_test("Web Search with AI (No Search)", False, f"Exception: {str(e)}")
+            return False
+
+    def test_perplexity_integration(self):
+        """Test Perplexity provider integration"""
+        try:
+            # First save Perplexity provider (should already be configured from environment)
+            provider_data = {
+                "name": "perplexity",
+                "api_key": "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",
+                "model": "llama-3.1-sonar-small-128k-online"
+            }
+            
+            save_response = requests.post(f"{API_BASE}/providers", 
+                                        json=provider_data, 
+                                        timeout=10)
+            
+            if save_response.status_code != 200:
+                self.log_test("Perplexity Integration", False, f"Failed to save Perplexity provider: {save_response.text}")
+                return False
+            
+            # Test AI response with Perplexity
+            search_ai_request = {
+                "query": "What are the latest developments in renewable energy?",
+                "session_id": self.session_id,
+                "provider": "perplexity",
+                "model": "llama-3.1-sonar-small-128k-online",
+                "max_results": 3,
+                "include_search": True
+            }
+            
+            response = requests.post(f"{API_BASE}/search-with-ai", 
+                                   json=search_ai_request, 
+                                   timeout=30)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("ai_response") and len(data["ai_response"]) > 0:
+                    if data.get("provider") == "perplexity":
+                        self.log_test("Perplexity Integration", True, f"Perplexity AI response generated successfully")
+                        return True
+                    else:
+                        self.log_test("Perplexity Integration", False, f"Wrong provider in response: {data.get('provider')}")
+                        return False
+                else:
+                    self.log_test("Perplexity Integration", False, "Empty AI response from Perplexity")
+                    return False
+            else:
+                self.log_test("Perplexity Integration", False, f"HTTP {response.status_code}: {response.text}")
+                return False
+        except Exception as e:
+            self.log_test("Perplexity Integration", False, f"Exception: {str(e)}")
+            return False
+
+    def test_models_endpoint_includes_perplexity(self):
+        """Test GET /api/models includes Perplexity models"""
+        try:
+            response = requests.get(f"{API_BASE}/models", timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                if "models" in data and isinstance(data["models"], dict):
+                    if "perplexity" in data["models"]:
+                        perplexity_models = data["models"]["perplexity"]
+                        expected_model = "llama-3.1-sonar-small-128k-online"
+                        if expected_model in perplexity_models:
+                            self.log_test("Models Endpoint (Perplexity)", True, f"Perplexity models available: {len(perplexity_models)}")
+                            return True
+                        else:
+                            self.log_test("Models Endpoint (Perplexity)", False, f"Expected model {expected_model} not found")
+                            return False
+                    else:
+                        self.log_test("Models Endpoint (Perplexity)", False, "Perplexity provider not found in models")
+                        return False
+                else:
+                    self.log_test("Models Endpoint (Perplexity)", False, f"Invalid response format: {data}")
+                    return False
+            else:
+                self.log_test("Models Endpoint (Perplexity)", False, f"HTTP {response.status_code}: {response.text}")
+                return False
+        except Exception as e:
+            self.log_test("Models Endpoint (Perplexity)", False, f"Exception: {str(e)}")
+            return False
+
+    def test_providers_endpoint_includes_perplexity(self):
+        """Test GET /api/providers shows Perplexity as configured"""
+        try:
+            response = requests.get(f"{API_BASE}/providers", timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                if "providers" in data and isinstance(data["providers"], list):
+                    perplexity_provider = next((p for p in data["providers"] if p["name"] == "perplexity"), None)
+                    if perplexity_provider:
+                        if perplexity_provider.get("configured"):
+                            self.log_test("Providers Endpoint (Perplexity)", True, "Perplexity provider configured")
+                            return True
+                        else:
+                            self.log_test("Providers Endpoint (Perplexity)", False, "Perplexity provider not configured")
+                            return False
+                    else:
+                        self.log_test("Providers Endpoint (Perplexity)", False, "Perplexity provider not found")
+                        return False
+                else:
+                    self.log_test("Providers Endpoint (Perplexity)", False, f"Invalid response format: {data}")
+                    return False
+            else:
+                self.log_test("Providers Endpoint (Perplexity)", False, f"HTTP {response.status_code}: {response.text}")
+                return False
+        except Exception as e:
+            self.log_test("Providers Endpoint (Perplexity)", False, f"Exception: {str(e)}")
+            return False
             
     async def test_websocket(self):
         """Test WebSocket /ws/{session_id}"""
