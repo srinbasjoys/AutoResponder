@@ -126,6 +126,27 @@ async def startup_event():
     # Ensure MongoDB indexes
     await db.conversations.create_index("session_id")
     await db.providers.create_index("user_id")
+    
+    # Set up Perplexity provider with environment API key
+    perplexity_api_key = os.getenv("PERPLEXITY_API_KEY")
+    if perplexity_api_key:
+        try:
+            perplexity_provider = {
+                "name": "perplexity",
+                "api_key": perplexity_api_key,
+                "model": "llama-3.1-sonar-small-128k-online",
+                "created_at": datetime.now(),
+                "user_id": "default"
+            }
+            
+            await db.providers.update_one(
+                {"name": "perplexity", "user_id": "default"},
+                {"$set": perplexity_provider},
+                upsert=True
+            )
+            logger.info("Perplexity provider configured with environment API key")
+        except Exception as e:
+            logger.error(f"Error setting up Perplexity provider: {e}")
 
 @app.get("/")
 async def root():
