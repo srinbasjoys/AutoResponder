@@ -109,12 +109,14 @@ Features needed:
 10. **Perplexity Integration**: Advanced AI models with online search capabilities
 
 ## Next Steps for User Testing
-The application is ready for testing! Users can:
+The application is ready for testing with enhanced web search capabilities! Users can:
 1. Record audio by pressing and holding the blue microphone button
-2. Select different AI providers and models from dropdowns
+2. Select different AI providers and models from dropdowns (including Perplexity models)
 3. Add their own API keys via the Settings panel
 4. View conversation history in the right panel
 5. Clear conversations using the trash icon
+6. **NEW**: Use web search-enhanced AI responses for more current and accurate information
+7. **NEW**: Test Perplexity models for advanced AI capabilities with online search integration
 
 ## Backend Testing Summary
 **Status**: ✅ MAJOR FUNCTIONALITY TESTS PASSED (13/14)
