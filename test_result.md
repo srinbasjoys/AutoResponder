@@ -95,12 +95,15 @@ Features needed:
 
 ## Features Implemented
 1. **Audio Recording**: 30-second push-to-talk button with timer
-2. **Multiple LLM Support**: All major providers with model selection
+2. **Multiple LLM Support**: All major providers with model selection (including Perplexity)
 3. **Speech-to-Text**: OpenAI Whisper (if API key provided) + Google Speech fallback
 4. **Conversation Memory**: Stores last 5 interactions with context
 5. **Real-time UI**: Visual feedback, recording animations, status updates
 6. **Settings Panel**: Easy API key configuration for all providers
 7. **Cross-platform**: Works on modern browsers with microphone access
+8. **Web Search Integration**: DuckDuckGo search with structured results
+9. **AI-Enhanced Search**: AI responses with web search context integration
+10. **Perplexity Integration**: Advanced AI models with online search capabilities
 
 ## Next Steps for User Testing
 The application is ready for testing! Users can:
