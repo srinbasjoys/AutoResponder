@@ -275,7 +275,9 @@ function App() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Main Recording Interface */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-8">
+            
+            {/* Voice Assistant Section */}
             <div className="bg-white rounded-2xl shadow-lg p-8">
               <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">
@@ -412,6 +414,84 @@ function App() {
                     {currentProvider} / {currentModel}
                   </span>
                 </div>
+              </div>
+            </div>
+
+            {/* Web Search Section */}
+            <div className="bg-white rounded-2xl shadow-lg p-8">
+              <div className="text-center mb-8">
+                <div className="flex items-center justify-center space-x-3 mb-2">
+                  <Globe className="w-8 h-8 text-green-500" />
+                  <h2 className="text-3xl font-bold text-gray-900">
+                    Web Search
+                  </h2>
+                </div>
+                <p className="text-gray-600">
+                  Search the web and get AI-powered responses
+                </p>
+              </div>
+
+              {/* Search Interface */}
+              <div className="space-y-6">
+                {/* Search Input */}
+                <div className="flex space-x-3">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Enter your search query..."
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        performWebSearchWithAI();
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={performWebSearchWithAI}
+                    disabled={isSearching || !searchQuery.trim()}
+                    className="px-6 py-3 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white rounded-lg font-medium transition-colors flex items-center space-x-2"
+                  >
+                    {isSearching ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    ) : (
+                      <Search className="w-4 h-4" />
+                    )}
+                    <span>{isSearching ? 'Searching...' : 'Search & Ask AI'}</span>
+                  </button>
+                </div>
+
+                {/* Search Options */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="includeWebSearch"
+                      checked={includeWebSearch}
+                      onChange={(e) => setIncludeWebSearch(e.target.checked)}
+                      className="rounded border-gray-300 text-green-500 focus:ring-green-500"
+                    />
+                    <label htmlFor="includeWebSearch" className="text-sm text-gray-700">
+                      Include web search results in AI response
+                    </label>
+                  </div>
+                  
+                  <button
+                    onClick={performWebSearch}
+                    disabled={isSearching || !searchQuery.trim()}
+                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Search Only
+                  </button>
+                </div>
+
+                {/* Search Status */}
+                {isSearching && (
+                  <div className="flex items-center justify-center space-x-2 text-green-600">
+                    <Zap className="w-4 h-4 animate-pulse" />
+                    <span className="font-medium">Searching the web...</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
