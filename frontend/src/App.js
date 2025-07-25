@@ -535,17 +535,32 @@ function App() {
 
                 {/* Search Options */}
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="includeWebSearch"
-                      checked={includeWebSearch}
-                      onChange={(e) => setIncludeWebSearch(e.target.checked)}
-                      className="rounded border-gray-300 text-green-500 focus:ring-green-500"
-                    />
-                    <label htmlFor="includeWebSearch" className="text-sm text-gray-700">
-                      Include web search results in AI response
-                    </label>
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="includeWebSearch"
+                        checked={includeWebSearch}
+                        onChange={(e) => setIncludeWebSearch(e.target.checked)}
+                        className="rounded border-gray-300 text-green-500 focus:ring-green-500"
+                      />
+                      <label htmlFor="includeWebSearch" className="text-sm text-gray-700">
+                        Include web search results
+                      </label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="autoSpeak"
+                        checked={autoSpeak}
+                        onChange={(e) => setAutoSpeak(e.target.checked)}
+                        className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                      />
+                      <label htmlFor="autoSpeak" className="text-sm text-gray-700">
+                        Auto-speak responses
+                      </label>
+                    </div>
                   </div>
                   
                   <button
