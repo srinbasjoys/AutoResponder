@@ -67,6 +67,11 @@ AVAILABLE_MODELS = {
     ],
     "groq": [
         "llama-3.3-70b-versatile", "llama-3.1-8b-instant", "gemma2-9b-it", "llama-guard-3-8b"
+    ],
+    "perplexity": [
+        "llama-3.1-sonar-small-128k-online", "llama-3.1-sonar-large-128k-online",
+        "llama-3.1-sonar-huge-128k-online", "llama-3.1-sonar-small-128k-chat",
+        "llama-3.1-sonar-large-128k-chat", "llama-3.1-sonar-huge-128k-chat"
     ]
 }
 
