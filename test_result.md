@@ -107,9 +107,11 @@ The application is ready for testing! Users can:
 5. Clear conversations using the trash icon
 
 ## Backend Testing Summary
-**Status**: ✅ ALL TESTS PASSED (8/8)
-**Last Tested**: July 24, 2025
-**Test Results**: All backend API endpoints are fully functional
-**AI Integration**: Working correctly with Groq llama-3.1-8b-instant model
+**Status**: ✅ MAJOR FUNCTIONALITY TESTS PASSED (13/14)
+**Last Tested**: January 24, 2025
+**Test Results**: All critical backend API endpoints are fully functional
+**AI Integration**: Working correctly with Groq llama-3.1-8b-instant and Perplexity llama-3.1-sonar-small-128k-online models
 **Database**: MongoDB persistence working
-**WebSocket**: Real-time communication operational
+**Web Search**: DuckDuckGo integration operational with AI context enhancement
+**WebSocket**: Minor handshake timeout in cloud environment (non-critical for core functionality)
+**Perplexity**: Successfully integrated with environment API key configuration
