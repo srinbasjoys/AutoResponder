@@ -165,6 +165,11 @@ function App() {
       // Add new conversation to the list
       setConversations(prev => [...prev, response.data]);
       
+      // Auto-speak the AI response if enabled
+      if (autoSpeak && response.data.ai_response) {
+        await speakText(response.data.ai_response);
+      }
+      
     } catch (error) {
       console.error('Error processing audio:', error);
       alert('Error processing audio. Please try again.');
