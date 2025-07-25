@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Settings, MessageCircle, Brain, Zap, Trash2, ChevronDown } from 'lucide-react';
+import { Mic, MicOff, Settings, MessageCircle, Brain, Zap, Trash2, ChevronDown, Search, Globe } from 'lucide-react';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
