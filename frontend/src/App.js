@@ -233,6 +233,11 @@ function App() {
         setShowSearchTab(true);
       }
       
+      // Auto-speak the AI response if enabled
+      if (autoSpeak && response.data.ai_response) {
+        await speakText(response.data.ai_response);
+      }
+      
       setSearchQuery('');
       
     } catch (error) {
@@ -241,6 +246,62 @@ function App() {
     } finally {
       setIsSearching(false);
     }
+  };
+
+  const speakText = async (text) => {
+    if (isSpeaking) {
+      stopSpeaking();
+      return;
+    }
+
+    try {
+      setIsSpeaking(true);
+      
+      const response = await axios.post(`${BACKEND_URL}/api/text-to-speech`, {
+        text: text,
+        voice_speed: 150,
+        voice_pitch: 0
+      }, {
+        responseType: 'blob'
+      });
+      
+      // Create audio blob and play
+      const audioBlob = new Blob([response.data], { type: 'audio/wav' });
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      
+      setCurrentAudio(audio);
+      
+      audio.onended = () => {
+        setIsSpeaking(false);
+        setCurrentAudio(null);
+        URL.revokeObjectURL(audioUrl);
+      };
+      
+      audio.onerror = () => {
+        setIsSpeaking(false);
+        setCurrentAudio(null);
+        URL.revokeObjectURL(audioUrl);
+        console.error('Error playing audio');
+      };
+      
+      await audio.play();
+      
+    } catch (error) {
+      console.error('Error with text-to-speech:', error);
+      setIsSpeaking(false);
+      setCurrentAudio(null);
+      alert('Error generating speech. Please try again.');
+    }
+  };
+
+  const stopSpeaking = () => {
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      setCurrentAudio(null);
+    }
+    setIsSpeaking(false);
   };
 
   return (
