@@ -363,6 +363,92 @@ async def clear_conversation(session_id: str):
         logger.error(f"Error clearing conversation: {e}")
         raise HTTPException(status_code=500, detail="Failed to clear conversation")
 
+async def perform_web_search(query: str, max_results: int = 5) -> List[Dict]:
+    """Perform web search using DuckDuckGo"""
+    try:
+        with DDGS() as ddgs:
+            results = []
+            for result in ddgs.text(query, max_results=max_results):
+                results.append({
+                    "title": result.get("title", ""),
+                    "body": result.get("body", ""),
+                    "url": result.get("href", ""),
+                    "source": "DuckDuckGo"
+                })
+            return results
+    except Exception as e:
+        logger.error(f"Error performing web search: {e}")
+        return []
+
+@app.post("/api/search")
+async def web_search(request: WebSearchRequest):
+    """Perform web search and return results"""
+    try:
+        logger.info(f"Performing web search for query: {request.query}")
+        results = await perform_web_search(request.query, request.max_results)
+        
+        return {
+            "query": request.query,
+            "results": results,
+            "count": len(results)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in web search endpoint: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to perform web search: {str(e)}")
+
+@app.post("/api/search-with-ai")
+async def web_search_with_ai(request: WebSearchWithAIRequest):
+    """Perform web search and get AI response based on results"""
+    try:
+        logger.info(f"Performing web search with AI for query: {request.query}")
+        
+        # Perform web search if requested
+        search_results = []
+        if request.include_search:
+            search_results = await perform_web_search(request.query, request.max_results)
+        
+        # Prepare context for AI
+        search_context = ""
+        if search_results:
+            search_context = "\n\nWeb search results:\n"
+            for i, result in enumerate(search_results, 1):
+                search_context += f"{i}. {result['title']}\n{result['body']}\nSource: {result['url']}\n\n"
+        
+        # Create enhanced prompt with search context
+        enhanced_query = f"{request.query}{search_context}"
+        
+        # Get AI response with search context
+        ai_response = await get_ai_response(enhanced_query, request.session_id, request.provider, request.model)
+        
+        # Save conversation with search context
+        conversation_id = str(uuid.uuid4())
+        conversation_data = {
+            "id": conversation_id,
+            "session_id": request.session_id,
+            "user_input": request.query,
+            "ai_response": ai_response,
+            "timestamp": datetime.now(),
+            "provider": request.provider,
+            "model": request.model,
+            "search_results": search_results if request.include_search else []
+        }
+        
+        await db.conversations.insert_one(conversation_data)
+        
+        return {
+            "id": conversation_id,
+            "query": request.query,
+            "ai_response": ai_response,
+            "search_results": search_results if request.include_search else [],
+            "provider": request.provider,
+            "model": request.model
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in search with AI endpoint: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to perform search with AI: {str(e)}")
+
 @app.websocket("/ws/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str):
     """WebSocket endpoint for real-time communication"""
