@@ -399,14 +399,21 @@ async def generate_speech(text: str, voice_speed: int = 150, voice_pitch: int = 
             # Create a new engine instance for this thread
             engine = pyttsx3.init()
             
-            # Set voice properties
-            voices = engine.getProperty('voices')
-            if voices:
-                # Use first available voice
-                engine.setProperty('voice', voices[0].id)
+            # Set voice properties more safely
+            try:
+                voices = engine.getProperty('voices')
+                if voices and len(voices) > 0:
+                    # Use first available voice
+                    engine.setProperty('voice', voices[0].id)
+            except Exception as e:
+                logger.warning(f"Could not set voice: {e}")
+                # Continue without setting voice
             
             # Set speech rate (words per minute)
-            engine.setProperty('rate', voice_speed)
+            try:
+                engine.setProperty('rate', voice_speed)
+            except Exception as e:
+                logger.warning(f"Could not set speech rate: {e}")
             
             # Create temporary file for audio output
             temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.wav')
@@ -417,6 +424,17 @@ async def generate_speech(text: str, voice_speed: int = 150, voice_pitch: int = 
             engine.save_to_file(text, temp_filename)
             engine.runAndWait()
             
+            # Check if file was created and has content
+            if not os.path.exists(temp_filename):
+                logger.error("TTS audio file was not created")
+                return None
+                
+            file_size = os.path.getsize(temp_filename)
+            if file_size == 0:
+                logger.error("TTS audio file is empty")
+                os.unlink(temp_filename)
+                return None
+            
             # Read the generated audio file
             with open(temp_filename, 'rb') as f:
                 audio_data = f.read()
@@ -424,6 +442,7 @@ async def generate_speech(text: str, voice_speed: int = 150, voice_pitch: int = 
             # Clean up temporary file
             os.unlink(temp_filename)
             
+            logger.info(f"Successfully generated {len(audio_data)} bytes of audio")
             return audio_data
             
         except Exception as e:
