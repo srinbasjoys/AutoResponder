@@ -496,48 +496,128 @@ function App() {
             </div>
           </div>
 
-          {/* Conversation History */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-2">
-                  <MessageCircle className="w-5 h-5 text-blue-500" />
-                  <h3 className="text-xl font-semibold text-gray-900">
-                    Conversation
-                  </h3>
-                </div>
-                <span className="text-xs text-gray-500">Last 5 interactions</span>
-              </div>
-              
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                {conversations.length === 0 ? (
-                  <div className="text-center py-8">
-                    <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500 text-sm">
-                      No conversations yet. Start by recording your first message!
-                    </p>
-                  </div>
-                ) : (
-                  conversations.map((conv, index) => (
-                    <div key={conv.id || index} className="space-y-2">
-                      <div className="bg-blue-50 p-3 rounded-lg">
-                        <p className="text-sm text-gray-700">
-                          <strong>You:</strong> {conv.user_input}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {conv.provider} / {conv.model}
-                        </p>
-                      </div>
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <p className="text-sm text-gray-700">
-                          <strong>AI:</strong> {conv.ai_response}
-                        </p>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+          {/* Conversation History & Search Results */}
+          <div className="lg:col-span-1 space-y-6">
+            
+            {/* Tab Navigation */}
+            <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+              <button
+                onClick={() => setShowSearchTab(false)}
+                className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                  !showSearchTab 
+                    ? 'bg-white text-blue-600 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <MessageCircle className="w-4 h-4 inline mr-1" />
+                Conversation
+              </button>
+              <button
+                onClick={() => setShowSearchTab(true)}
+                className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                  showSearchTab 
+                    ? 'bg-white text-green-600 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Search className="w-4 h-4 inline mr-1" />
+                Search Results
+              </button>
             </div>
+
+            {/* Conversation History */}
+            {!showSearchTab && (
+              <div className="bg-white rounded-2xl shadow-lg p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-2">
+                    <MessageCircle className="w-5 h-5 text-blue-500" />
+                    <h3 className="text-xl font-semibold text-gray-900">
+                      Conversation
+                    </h3>
+                  </div>
+                  <span className="text-xs text-gray-500">Last 5 interactions</span>
+                </div>
+                
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {conversations.length === 0 ? (
+                    <div className="text-center py-8">
+                      <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500 text-sm">
+                        No conversations yet. Start by recording your first message!
+                      </p>
+                    </div>
+                  ) : (
+                    conversations.map((conv, index) => (
+                      <div key={conv.id || index} className="space-y-2">
+                        <div className="bg-blue-50 p-3 rounded-lg">
+                          <p className="text-sm text-gray-700">
+                            <strong>You:</strong> {conv.user_input}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {conv.provider} / {conv.model}
+                          </p>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <p className="text-sm text-gray-700">
+                            <strong>AI:</strong> {conv.ai_response}
+                          </p>
+                          {conv.search_results && conv.search_results.length > 0 && (
+                            <p className="text-xs text-green-600 mt-1">
+                              ✓ Includes web search results
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Search Results */}
+            {showSearchTab && (
+              <div className="bg-white rounded-2xl shadow-lg p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-2">
+                    <Search className="w-5 h-5 text-green-500" />
+                    <h3 className="text-xl font-semibold text-gray-900">
+                      Search Results
+                    </h3>
+                  </div>
+                  <span className="text-xs text-gray-500">{searchResults.length} results</span>
+                </div>
+                
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {searchResults.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Globe className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500 text-sm">
+                        No search results yet. Try searching for something!
+                      </p>
+                    </div>
+                  ) : (
+                    searchResults.map((result, index) => (
+                      <div key={index} className="border-l-4 border-green-500 pl-4 py-2">
+                        <h4 className="font-medium text-gray-900 text-sm mb-1">
+                          {result.title}
+                        </h4>
+                        <p className="text-xs text-gray-600 mb-2">
+                          {result.body}
+                        </p>
+                        <a
+                          href={result.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-green-600 hover:text-green-800 hover:underline"
+                        >
+                          {result.url}
+                        </a>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
