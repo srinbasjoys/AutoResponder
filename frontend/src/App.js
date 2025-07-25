@@ -178,6 +178,65 @@ function App() {
     }
   };
 
+  const performWebSearch = async () => {
+    if (!searchQuery.trim()) {
+      alert('Please enter a search query');
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const response = await axios.post(`${BACKEND_URL}/api/search`, {
+        query: searchQuery,
+        max_results: 5
+      });
+      
+      setSearchResults(response.data.results);
+      setShowSearchTab(true);
+      
+    } catch (error) {
+      console.error('Error performing web search:', error);
+      alert('Error performing web search. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const performWebSearchWithAI = async () => {
+    if (!searchQuery.trim()) {
+      alert('Please enter a search query');
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const response = await axios.post(`${BACKEND_URL}/api/search-with-ai`, {
+        query: searchQuery,
+        session_id: sessionId,
+        provider: currentProvider,
+        model: currentModel,
+        max_results: 5,
+        include_search: includeWebSearch
+      });
+      
+      // Add to conversations
+      setConversations(prev => [...prev, response.data]);
+      
+      if (response.data.search_results && response.data.search_results.length > 0) {
+        setSearchResults(response.data.search_results);
+        setShowSearchTab(true);
+      }
+      
+      setSearchQuery('');
+      
+    } catch (error) {
+      console.error('Error performing web search with AI:', error);
+      alert('Error performing web search with AI. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
       {/* Header */}
