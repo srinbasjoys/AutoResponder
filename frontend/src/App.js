@@ -645,14 +645,29 @@ function App() {
                           </p>
                         </div>
                         <div className="bg-gray-50 p-3 rounded-lg">
-                          <p className="text-sm text-gray-700">
-                            <strong>AI:</strong> {conv.ai_response}
-                          </p>
-                          {conv.search_results && conv.search_results.length > 0 && (
-                            <p className="text-xs text-green-600 mt-1">
-                              ✓ Includes web search results
-                            </p>
-                          )}
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <p className="text-sm text-gray-700">
+                                <strong>AI:</strong> {conv.ai_response}
+                              </p>
+                              {conv.search_results && conv.search_results.length > 0 && (
+                                <p className="text-xs text-green-600 mt-1">
+                                  ✓ Includes web search results
+                                </p>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => speakText(conv.ai_response)}
+                              className="ml-2 p-1 hover:bg-gray-200 rounded transition-colors"
+                              title={isSpeaking ? "Stop speaking" : "Speak response"}
+                            >
+                              {isSpeaking ? (
+                                <VolumeX className="w-4 h-4 text-gray-600" />
+                              ) : (
+                                <Volume2 className="w-4 h-4 text-gray-600" />
+                              )}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))
