@@ -101,6 +101,18 @@ class ModelSelectionRequest(BaseModel):
     provider: str
     model: str
 
+class WebSearchRequest(BaseModel):
+    query: str
+    max_results: int = 5
+
+class WebSearchWithAIRequest(BaseModel):
+    query: str
+    session_id: str
+    provider: str
+    model: str
+    max_results: int = 5
+    include_search: bool = True
+
 # Active WebSocket connections
 active_connections: Dict[str, WebSocket] = {}
 
