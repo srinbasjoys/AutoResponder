@@ -24,6 +24,7 @@ Features needed:
    - Anthropic (Claude models)
    - Gemini (Google AI models)
    - Groq (llama-3.3-70b-versatile, llama-3.1-8b-instant, etc.)
+   - Perplexity (llama-3.1-sonar-small-128k-online, etc.)
 ✅ Created push-to-talk audio recording interface (30-second limit)
 ✅ Implemented conversation memory system (last 5 interactions)
 ✅ Added dynamic model selection UI
@@ -32,6 +33,9 @@ Features needed:
 ✅ Beautiful, responsive UI with recording animations
 ✅ MongoDB integration for conversation persistence
 ✅ WebSocket support for real-time communication
+✅ Web search integration using DuckDuckGo API
+✅ AI response enhancement with web search context
+✅ Perplexity provider integration with environment API key
 
 ## Current Status
 ✅ **WORKING**: AutoResponder AI Assistant is fully functional!
