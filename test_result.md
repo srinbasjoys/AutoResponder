@@ -36,6 +36,7 @@ Features needed:
 **✅ WEB SEARCH CAPABILITIES COMPLETED:**
    - **✅ DuckDuckGo web search integration via /api/search endpoint**
    - **✅ AI-enhanced search responses via /api/search-with-ai endpoint**
+   - **✅ Real-time web search for current information (tested)**
    - **✅ Frontend web search interface with search input and buttons**
    - **✅ Toggle option for including web search results in AI responses**
    - **✅ Tabbed interface showing conversation history and search results**
@@ -43,6 +44,12 @@ Features needed:
    - **✅ Perplexity provider auto-configured with environment API key**
    - **✅ All 6 Perplexity models available (online and chat variants)**
    - **✅ Tested and working with llama-3.1-sonar-small-128k-online model**
+**✅ VOICE CAPABILITIES COMPLETED:**
+   - **✅ Text-to-Speech (TTS) functionality using open-source espeak**
+   - **✅ Auto-speak toggle for AI responses**
+   - **✅ Manual speak buttons for individual conversation responses**
+   - **✅ Full voice interaction: Speech-to-Text + AI + Text-to-Speech**
+   - **✅ Voice controls integrated into web search functionality**
 
 ## Current Status
 ✅ **COMPLETE**: AutoResponder AI Assistant with Web Search & Perplexity Integration!
