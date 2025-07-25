@@ -116,6 +116,11 @@ class WebSearchWithAIRequest(BaseModel):
     max_results: int = 5
     include_search: bool = True
 
+class TextToSpeechRequest(BaseModel):
+    text: str
+    voice_speed: int = 150  # Words per minute
+    voice_pitch: int = 0    # -50 to 50
+
 # Active WebSocket connections
 active_connections: Dict[str, WebSocket] = {}
 
