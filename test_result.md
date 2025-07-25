@@ -38,11 +38,14 @@ Features needed:
 ✅ Perplexity provider integration with environment API key
 
 ## Current Status
-✅ **WORKING**: AutoResponder AI Assistant is fully functional!
-- Backend running on http://localhost:8001
-- Frontend running on http://localhost:3000
+✅ **WORKING**: AutoResponder AI Assistant is fully functional with enhanced web search capabilities!
+- Backend running on https://1a5b05d7-f2d9-4b25-9e00-2889fce9cb6c.preview.emergentagent.com
+- Frontend running on https://1a5b05d7-f2d9-4b25-9e00-2889fce9cb6c.preview.emergentagent.com
 - Speech-to-text transcription working (fallback method)
 - LLM integration working with Groq API (updated to llama-3.1-8b-instant)
+- Perplexity integration working with llama-3.1-sonar-small-128k-online model
+- Web search functionality operational using DuckDuckGo API
+- AI-enhanced search responses with web context integration
 - Push-to-talk interface working
 - Model selection interface working
 - Conversation history working
