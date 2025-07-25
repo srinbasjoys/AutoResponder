@@ -501,7 +501,8 @@ class BackendTester:
     async def test_websocket(self):
         """Test WebSocket /ws/{session_id}"""
         try:
-            ws_url = f"ws://localhost:8001/ws/{self.session_id}"
+            # Convert HTTP URL to WebSocket URL
+            ws_url = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://') + f"/ws/{self.session_id}"
             
             async with websockets.connect(ws_url) as websocket:
                 # Send a test message
