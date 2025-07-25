@@ -17,6 +17,13 @@ function App() {
   const [recordingTime, setRecordingTime] = useState(0);
   const [transcribedText, setTranscribedText] = useState('');
   
+  // Web search states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [includeWebSearch, setIncludeWebSearch] = useState(false);
+  const [showSearchTab, setShowSearchTab] = useState(false);
+  
   const mediaRecorderRef = useRef(null);
   const recordingTimerRef = useRef(null);
   const streamRef = useRef(null);
