@@ -17,6 +17,7 @@ from emergentintegrations.llm.chat import LlmChat, UserMessage
 import speech_recognition as sr
 from pydub import AudioSegment
 import io
+from duckduckgo_search import DDGS
 
 # Load environment variables
 load_dotenv()
