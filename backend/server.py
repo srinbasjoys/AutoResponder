@@ -102,6 +102,10 @@ class AudioProcessRequest(BaseModel):
     session_id: str
     provider: str
     model: str
+    noise_reduction: bool = True  # Enable noise reduction by default
+    noise_reduction_strength: float = 0.7  # 0.0 to 1.0
+    auto_gain_control: bool = True
+    high_pass_filter: bool = True
 
 class ModelSelectionRequest(BaseModel):
     provider: str
