@@ -34,7 +34,16 @@ function App() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [currentAudio, setCurrentAudio] = useState(null);
-  
+
+  // Audio Enhancement Settings
+  const [audioEnhancement, setAudioEnhancement] = useState({
+    noise_reduction: true,
+    noise_reduction_strength: 0.7,
+    auto_gain_control: true,
+    high_pass_filter: true
+  });
+  const [showAudioSettings, setShowAudioSettings] = useState(false);
+
   // Real-time processing states
   const [isStreamingMode, setIsStreamingMode] = useState(false);
   const [realtimeTranscription, setRealtimeTranscription] = useState('');
