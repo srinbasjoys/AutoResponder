@@ -290,11 +290,6 @@ function App() {
   };
 
   const startRecording = async () => {
-    if (!isConnected) {
-      alert('WebSocket not connected. Please wait for connection.');
-      return;
-    }
-    
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
@@ -313,17 +308,23 @@ function App() {
         reader.onloadend = async () => {
           const base64Audio = reader.result.split(',')[1];
           
-          // Send audio via WebSocket for real-time processing
-          const success = sendWebSocketMessage({
-            type: 'audio_data',
-            audio_data: base64Audio,
-            provider: currentProvider,
-            model: currentModel,
-            session_id: sessionId
-          });
-          
-          if (!success) {
-            // Fallback to HTTP if WebSocket fails
+          // Try WebSocket first if connected, otherwise use HTTP
+          if (isConnected && websocketRef.current?.readyState === WebSocket.OPEN) {
+            console.log('Using WebSocket for real-time processing');
+            const success = sendWebSocketMessage({
+              type: 'audio_data',
+              audio_data: base64Audio,
+              provider: currentProvider,
+              model: currentModel,
+              session_id: sessionId
+            });
+            
+            if (!success) {
+              console.log('WebSocket failed, falling back to HTTP');
+              await processAudioHttp(base64Audio);
+            }
+          } else {
+            console.log('Using HTTP for audio processing');
             await processAudioHttp(base64Audio);
           }
         };
