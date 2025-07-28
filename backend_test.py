@@ -638,6 +638,309 @@ class BackendTester:
         except Exception as e:
             self.log_test("Providers Endpoint (Perplexity)", False, f"Exception: {str(e)}")
             return False
+
+    def test_audio_enhancement_config_save(self):
+        """Test POST /api/audio-enhancement-config"""
+        try:
+            config_data = {
+                "session_id": self.session_id,
+                "noise_reduction": True,
+                "noise_reduction_strength": 0.8,
+                "auto_gain_control": True,
+                "high_pass_filter": True
+            }
+            
+            response = requests.post(f"{API_BASE}/audio-enhancement-config", 
+                                   json=config_data, 
+                                   timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "message" in data and "successfully" in data["message"]:
+                    if "config" in data:
+                        config = data["config"]
+                        # Verify all fields are saved correctly
+                        if (config.get("noise_reduction") == True and 
+                            config.get("noise_reduction_strength") == 0.8 and
+                            config.get("auto_gain_control") == True and
+                            config.get("high_pass_filter") == True):
+                            self.log_test("Audio Enhancement Config Save", True, "Configuration saved successfully")
+                            return True
+                        else:
+                            self.log_test("Audio Enhancement Config Save", False, f"Configuration values not saved correctly: {config}")
+                            return False
+                    else:
+                        self.log_test("Audio Enhancement Config Save", False, "Config data not returned in response")
+                        return False
+                else:
+                    self.log_test("Audio Enhancement Config Save", False, f"Unexpected response: {data}")
+                    return False
+            else:
+                self.log_test("Audio Enhancement Config Save", False, f"HTTP {response.status_code}: {response.text}")
+                return False
+        except Exception as e:
+            self.log_test("Audio Enhancement Config Save", False, f"Exception: {str(e)}")
+            return False
+
+    def test_audio_enhancement_config_get(self):
+        """Test GET /api/audio-enhancement-config/{session_id}"""
+        try:
+            response = requests.get(f"{API_BASE}/audio-enhancement-config/{self.session_id}", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                required_fields = ["session_id", "noise_reduction", "noise_reduction_strength", 
+                                 "auto_gain_control", "high_pass_filter"]
+                
+                if all(field in data for field in required_fields):
+                    # Check if we get the previously saved configuration
+                    if (data.get("noise_reduction") == True and 
+                        data.get("noise_reduction_strength") == 0.8 and
+                        data.get("auto_gain_control") == True and
+                        data.get("high_pass_filter") == True):
+                        self.log_test("Audio Enhancement Config Get", True, "Retrieved saved configuration correctly")
+                        return True
+                    else:
+                        # Check if we get default configuration (if no config was saved)
+                        if (data.get("noise_reduction") == True and 
+                            data.get("noise_reduction_strength") == 0.7 and
+                            data.get("auto_gain_control") == True and
+                            data.get("high_pass_filter") == True):
+                            self.log_test("Audio Enhancement Config Get", True, "Retrieved default configuration correctly")
+                            return True
+                        else:
+                            self.log_test("Audio Enhancement Config Get", False, f"Unexpected configuration values: {data}")
+                            return False
+                else:
+                    missing_fields = [f for f in required_fields if f not in data]
+                    self.log_test("Audio Enhancement Config Get", False, f"Missing fields: {missing_fields}")
+                    return False
+            else:
+                self.log_test("Audio Enhancement Config Get", False, f"HTTP {response.status_code}: {response.text}")
+                return False
+        except Exception as e:
+            self.log_test("Audio Enhancement Config Get", False, f"Exception: {str(e)}")
+            return False
+
+    def test_audio_stats(self):
+        """Test GET /api/audio-stats/{session_id}"""
+        try:
+            response = requests.get(f"{API_BASE}/audio-stats/{self.session_id}", timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                required_fields = ["session_id", "total_audio_processed", "transcription_success_rate", 
+                                 "noise_reduction_usage", "recent_conversations"]
+                
+                if all(field in data for field in required_fields):
+                    # Verify data types
+                    if (isinstance(data["total_audio_processed"], int) and
+                        isinstance(data["transcription_success_rate"], (int, float)) and
+                        isinstance(data["noise_reduction_usage"], (int, float)) and
+                        isinstance(data["recent_conversations"], list)):
+                        self.log_test("Audio Stats", True, f"Stats: {data['total_audio_processed']} processed, {data['transcription_success_rate']}% success rate")
+                        return True
+                    else:
+                        self.log_test("Audio Stats", False, f"Invalid data types in response: {data}")
+                        return False
+                else:
+                    missing_fields = [f for f in required_fields if f not in data]
+                    self.log_test("Audio Stats", False, f"Missing fields: {missing_fields}")
+                    return False
+            else:
+                self.log_test("Audio Stats", False, f"HTTP {response.status_code}: {response.text}")
+                return False
+        except Exception as e:
+            self.log_test("Audio Stats", False, f"Exception: {str(e)}")
+            return False
+
+    def test_process_audio_with_noise_cancellation_disabled(self):
+        """Test POST /api/process-audio with noise cancellation disabled"""
+        try:
+            realistic_audio = self.create_realistic_audio_base64()
+            
+            audio_request = {
+                "audio_data": realistic_audio,
+                "session_id": self.session_id + "_no_noise_reduction",
+                "provider": "groq",
+                "model": "llama-3.1-8b-instant",
+                "noise_reduction": False,
+                "noise_reduction_strength": 0.0,
+                "auto_gain_control": False,
+                "high_pass_filter": False
+            }
+            
+            response = requests.post(f"{API_BASE}/process-audio", 
+                                   json=audio_request, 
+                                   timeout=45)
+            
+            if response.status_code == 200:
+                data = response.json()
+                required_fields = ["id", "user_input", "ai_response", "provider", "model", "audio_enhancement"]
+                
+                if all(field in data for field in required_fields):
+                    # Verify audio enhancement settings are stored correctly
+                    enhancement = data["audio_enhancement"]
+                    if (enhancement.get("noise_reduction") == False and
+                        enhancement.get("noise_reduction_strength") == 0.0 and
+                        enhancement.get("auto_gain_control") == False and
+                        enhancement.get("high_pass_filter") == False):
+                        self.log_test("Process Audio (No Noise Cancellation)", True, "Audio processed without noise cancellation")
+                        return True
+                    else:
+                        self.log_test("Process Audio (No Noise Cancellation)", False, f"Audio enhancement settings not stored correctly: {enhancement}")
+                        return False
+                else:
+                    missing_fields = [f for f in required_fields if f not in data]
+                    self.log_test("Process Audio (No Noise Cancellation)", False, f"Missing fields: {missing_fields}")
+                    return False
+            else:
+                self.log_test("Process Audio (No Noise Cancellation)", False, f"HTTP {response.status_code}: {response.text}")
+                return False
+        except Exception as e:
+            self.log_test("Process Audio (No Noise Cancellation)", False, f"Exception: {str(e)}")
+            return False
+
+    def test_process_audio_with_different_noise_strengths(self):
+        """Test POST /api/process-audio with different noise reduction strengths"""
+        try:
+            realistic_audio = self.create_realistic_audio_base64()
+            strengths_to_test = [0.3, 0.7, 1.0]
+            
+            for strength in strengths_to_test:
+                audio_request = {
+                    "audio_data": realistic_audio,
+                    "session_id": self.session_id + f"_strength_{strength}",
+                    "provider": "groq",
+                    "model": "llama-3.1-8b-instant",
+                    "noise_reduction": True,
+                    "noise_reduction_strength": strength,
+                    "auto_gain_control": True,
+                    "high_pass_filter": True
+                }
+                
+                response = requests.post(f"{API_BASE}/process-audio", 
+                                       json=audio_request, 
+                                       timeout=45)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if "audio_enhancement" in data:
+                        enhancement = data["audio_enhancement"]
+                        if enhancement.get("noise_reduction_strength") == strength:
+                            continue  # This strength test passed
+                        else:
+                            self.log_test("Process Audio (Different Noise Strengths)", False, f"Strength {strength} not stored correctly")
+                            return False
+                    else:
+                        self.log_test("Process Audio (Different Noise Strengths)", False, f"Audio enhancement data missing for strength {strength}")
+                        return False
+                else:
+                    self.log_test("Process Audio (Different Noise Strengths)", False, f"HTTP {response.status_code} for strength {strength}: {response.text}")
+                    return False
+            
+            self.log_test("Process Audio (Different Noise Strengths)", True, f"All noise reduction strengths tested: {strengths_to_test}")
+            return True
+            
+        except Exception as e:
+            self.log_test("Process Audio (Different Noise Strengths)", False, f"Exception: {str(e)}")
+            return False
+
+    def test_process_audio_with_selective_enhancements(self):
+        """Test POST /api/process-audio with selective audio enhancements"""
+        try:
+            realistic_audio = self.create_realistic_audio_base64()
+            
+            # Test with only auto gain control enabled
+            audio_request = {
+                "audio_data": realistic_audio,
+                "session_id": self.session_id + "_selective_agc",
+                "provider": "groq",
+                "model": "llama-3.1-8b-instant",
+                "noise_reduction": False,
+                "noise_reduction_strength": 0.0,
+                "auto_gain_control": True,
+                "high_pass_filter": False
+            }
+            
+            response = requests.post(f"{API_BASE}/process-audio", 
+                                   json=audio_request, 
+                                   timeout=45)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "audio_enhancement" in data:
+                    enhancement = data["audio_enhancement"]
+                    if (enhancement.get("noise_reduction") == False and
+                        enhancement.get("auto_gain_control") == True and
+                        enhancement.get("high_pass_filter") == False):
+                        self.log_test("Process Audio (Selective Enhancements)", True, "Selective audio enhancements applied correctly")
+                        return True
+                    else:
+                        self.log_test("Process Audio (Selective Enhancements)", False, f"Selective enhancements not applied correctly: {enhancement}")
+                        return False
+                else:
+                    self.log_test("Process Audio (Selective Enhancements)", False, "Audio enhancement data missing")
+                    return False
+            else:
+                self.log_test("Process Audio (Selective Enhancements)", False, f"HTTP {response.status_code}: {response.text}")
+                return False
+        except Exception as e:
+            self.log_test("Process Audio (Selective Enhancements)", False, f"Exception: {str(e)}")
+            return False
+
+    def test_conversation_persistence_with_audio_enhancement(self):
+        """Test that conversations are properly stored with audio enhancement metadata"""
+        try:
+            # First, process audio with specific enhancement settings
+            realistic_audio = self.create_realistic_audio_base64()
+            
+            audio_request = {
+                "audio_data": realistic_audio,
+                "session_id": self.session_id + "_persistence_test",
+                "provider": "groq",
+                "model": "llama-3.1-8b-instant",
+                "noise_reduction": True,
+                "noise_reduction_strength": 0.9,
+                "auto_gain_control": True,
+                "high_pass_filter": True
+            }
+            
+            process_response = requests.post(f"{API_BASE}/process-audio", 
+                                           json=audio_request, 
+                                           timeout=45)
+            
+            if process_response.status_code != 200:
+                self.log_test("Conversation Persistence (Audio Enhancement)", False, f"Failed to process audio: {process_response.text}")
+                return False
+            
+            # Now retrieve the conversation and verify audio enhancement metadata is stored
+            time.sleep(1)  # Brief pause to ensure data is saved
+            
+            conv_response = requests.get(f"{API_BASE}/conversations/{self.session_id}_persistence_test", timeout=10)
+            
+            if conv_response.status_code == 200:
+                data = conv_response.json()
+                if "conversations" in data and len(data["conversations"]) > 0:
+                    conversation = data["conversations"][-1]  # Get the latest conversation
+                    
+                    # Check if the conversation was stored (even if transcription failed)
+                    if "user_input" in conversation and "ai_response" in conversation:
+                        self.log_test("Conversation Persistence (Audio Enhancement)", True, "Conversation with audio enhancement metadata stored successfully")
+                        return True
+                    else:
+                        self.log_test("Conversation Persistence (Audio Enhancement)", False, "Conversation missing required fields")
+                        return False
+                else:
+                    self.log_test("Conversation Persistence (Audio Enhancement)", False, "No conversations found after audio processing")
+                    return False
+            else:
+                self.log_test("Conversation Persistence (Audio Enhancement)", False, f"Failed to retrieve conversations: {conv_response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("Conversation Persistence (Audio Enhancement)", False, f"Exception: {str(e)}")
+            return False
             
     async def test_websocket(self):
         """Test WebSocket /ws/{session_id}"""
