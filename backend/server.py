@@ -453,10 +453,13 @@ async def transcribe_audio_with_whisper(audio_data: str, noise_reduction: bool =
                                              noise_reduction_strength, 
                                              auto_gain_control, high_pass_filter)
 
-async def transcribe_audio_fallback(audio_data: str) -> str:
-    """Fallback transcription using SpeechRecognition library"""
+async def transcribe_audio_fallback(audio_data: str, noise_reduction: bool = True, 
+                                   noise_reduction_strength: float = 0.7,
+                                   auto_gain_control: bool = True,
+                                   high_pass_filter: bool = True) -> str:
+    """Fallback transcription using SpeechRecognition library with noise cancellation"""
     try:
-        logger.info("Starting fallback transcription with Google Speech Recognition")
+        logger.info("Starting fallback transcription with Google Speech Recognition and noise cancellation")
         
         # Step 1: Decode base64 audio
         try:
@@ -466,54 +469,70 @@ async def transcribe_audio_fallback(audio_data: str) -> str:
             logger.error(f"Error decoding base64 audio: {e}")
             return "Error: Could not decode audio data. Please try recording again."
         
-        # Step 2: Convert to audio segment
+        # Step 2: Load audio with librosa for advanced processing
         try:
-            audio_segment = AudioSegment.from_file(io.BytesIO(audio_bytes))
-            logger.info(f"Audio segment loaded - Duration: {len(audio_segment)}ms, Channels: {audio_segment.channels}, Sample Rate: {audio_segment.frame_rate}")
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
+                temp_file.write(audio_bytes)
+                temp_file.flush()
+                
+                # Load audio with librosa (better than pydub for audio processing)
+                audio_array, sample_rate = librosa.load(temp_file.name, sr=16000)
+                logger.info(f"Audio loaded - Duration: {len(audio_array)/sample_rate:.2f}s, Sample Rate: {sample_rate}")
+                
+                # Apply noise cancellation if enabled
+                if noise_reduction:
+                    logger.info("Applying noise cancellation...")
+                    audio_array = await apply_noise_cancellation(
+                        audio_array, sample_rate, noise_reduction, 
+                        noise_reduction_strength, auto_gain_control, high_pass_filter
+                    )
+                
+                os.unlink(temp_file.name)
+                
         except Exception as e:
-            logger.error(f"Error loading audio segment: {e}")
+            logger.error(f"Error loading/processing audio: {e}")
             return "Error: Could not process audio format. Please try recording again."
         
-        # Step 3: Export as wav for speech recognition
+        # Step 3: Convert enhanced audio back to wav for speech recognition
         try:
             wav_io = io.BytesIO()
-            audio_segment.export(wav_io, format="wav")
+            sf.write(wav_io, audio_array, sample_rate, format='WAV')
             wav_io.seek(0)
-            logger.info(f"Audio exported to WAV format: {wav_io.getvalue().__len__()} bytes")
+            logger.info(f"Enhanced audio converted to WAV format: {wav_io.getvalue().__len__()} bytes")
         except Exception as e:
-            logger.error(f"Error exporting audio to WAV: {e}")
-            return "Error: Could not convert audio to WAV format. Please try recording again."
+            logger.error(f"Error converting enhanced audio to WAV: {e}")
+            return "Error: Could not convert enhanced audio. Please try recording again."
         
-        # Step 4: Use speech recognition
+        # Step 4: Use speech recognition with enhanced audio
         try:
             recognizer = sr.Recognizer()
             
-            # Adjust recognizer settings for better accuracy
-            recognizer.energy_threshold = 300
+            # Optimized recognizer settings for enhanced audio
+            recognizer.energy_threshold = 200  # Lower threshold for cleaner audio
             recognizer.dynamic_energy_threshold = True
-            recognizer.pause_threshold = 0.8
-            recognizer.phrase_threshold = 0.3
-            recognizer.non_speaking_duration = 0.8
+            recognizer.pause_threshold = 0.6    # Shorter pause for better response
+            recognizer.phrase_threshold = 0.2
+            recognizer.non_speaking_duration = 0.6
             
             with sr.AudioFile(wav_io) as source:
-                logger.info("Recording audio for speech recognition...")
-                # Adjust for ambient noise
-                recognizer.adjust_for_ambient_noise(source, duration=0.5)
+                logger.info("Recording enhanced audio for speech recognition...")
+                # Adjust for ambient noise (shorter duration for pre-processed audio)
+                recognizer.adjust_for_ambient_noise(source, duration=0.2)
                 audio = recognizer.record(source)
                 
-                logger.info("Calling Google Speech Recognition API...")
-                # Use Google Speech Recognition with timeout and language settings
+                logger.info("Calling Google Speech Recognition API with enhanced audio...")
+                # Use Google Speech Recognition with optimized settings
                 text = recognizer.recognize_google(
                     audio, 
                     language="en-US",
                     show_all=False
                 )
                 
-                logger.info(f"Successfully transcribed text: '{text}'")
+                logger.info(f"✓ Successfully transcribed enhanced audio: '{text}'")
                 return text
                 
         except sr.UnknownValueError:
-            logger.warning("Google Speech Recognition could not understand the audio")
+            logger.warning("Google Speech Recognition could not understand the enhanced audio")
             return "Could not understand the audio. Please speak clearly and try again."
             
         except sr.RequestError as e:
@@ -526,7 +545,7 @@ async def transcribe_audio_fallback(audio_data: str) -> str:
             
     except Exception as e:
         logger.error(f"Unexpected error in fallback transcription: {e}")
-        return "Sorry, I couldn't understand the audio. Please try again."
+        return "Sorry, I couldn't process the audio. Please try again."
 
 async def stream_ai_response(websocket: WebSocket, user_input: str, session_id: str, provider: str, model: str):
     """Stream AI response to WebSocket with real-time updates"""
