@@ -377,14 +377,18 @@ function App() {
   };
 
   const processAudioHttp = async (audioData) => {
-    // Fallback HTTP processing (original implementation)
+    // Enhanced HTTP processing with noise cancellation
     setIsProcessing(true);
     try {
       const response = await axios.post(`${BACKEND_URL}/api/process-audio`, {
         audio_data: audioData,
         session_id: sessionId,
         provider: currentProvider,
-        model: currentModel
+        model: currentModel,
+        noise_reduction: audioEnhancement.noise_reduction,
+        noise_reduction_strength: audioEnhancement.noise_reduction_strength,
+        auto_gain_control: audioEnhancement.auto_gain_control,
+        high_pass_filter: audioEnhancement.high_pass_filter
       });
       
       // Set transcribed text
@@ -400,7 +404,18 @@ function App() {
       
     } catch (error) {
       console.error('Error processing audio:', error);
-      alert('Error processing audio. Please try again.');
+      let errorMessage = 'Error processing audio. Please try again.';
+      
+      // Better error handling for production
+      if (error.response?.status === 429) {
+        errorMessage = 'Too many requests. Please wait a moment and try again.';
+      } else if (error.response?.status >= 500) {
+        errorMessage = 'Server error. Please try again in a few moments.';
+      } else if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      }
+      
+      alert(errorMessage);
     } finally {
       setIsProcessing(false);
     }
