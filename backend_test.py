@@ -698,7 +698,7 @@ class BackendTester:
         print("🚀 Starting AutoResponder Backend API Tests")
         print("=" * 60)
         
-        # Test sequence
+        # Test sequence - prioritizing audio processing tests as requested
         tests = [
             ("Health Check", self.test_health_endpoint),
             ("Models Endpoint", self.test_models_endpoint),
@@ -706,11 +706,15 @@ class BackendTester:
             ("Save Provider", self.test_save_provider),
             ("Get Providers", self.test_get_providers),
             ("Providers Endpoint (Perplexity)", self.test_providers_endpoint_includes_perplexity),
+            # Audio processing tests - main focus of this review
+            ("Speech Recognition Connectivity", self.test_speech_recognition_connectivity),
+            ("Audio Transcription Fallback", self.test_audio_transcription_fallback),
+            ("Process Audio", self.test_process_audio),
+            # Other functionality tests
             ("Web Search", self.test_web_search),
             ("Web Search with AI", self.test_web_search_with_ai),
             ("Web Search with AI (No Search)", self.test_web_search_with_ai_no_search),
             ("Perplexity Integration", self.test_perplexity_integration),
-            ("Process Audio", self.test_process_audio),
             ("Get Conversation", self.test_get_conversation),
             ("Clear Conversation", self.test_clear_conversation),
         ]
