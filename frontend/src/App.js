@@ -717,9 +717,14 @@ function App() {
                       <p className="text-gray-500">
                         Press and hold to start recording
                       </p>
-                      {!isConnected && (
-                        <p className="text-red-500 text-sm">
-                          WebSocket disconnected - using fallback mode
+                      {connectionStatus === 'fallback' && (
+                        <p className="text-yellow-600 text-sm">
+                          Running in HTTP mode - fully functional
+                        </p>
+                      )}
+                      {isConnected && (
+                        <p className="text-green-600 text-sm">
+                          Real-time WebSocket mode active
                         </p>
                       )}
                     </div>
