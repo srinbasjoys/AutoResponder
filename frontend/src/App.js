@@ -3,7 +3,7 @@ import { Mic, MicOff, Settings, MessageCircle, Brain, Zap, Trash2, ChevronDown, 
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
-const WS_URL = BACKEND_URL.replace('http', 'ws').replace('https', 'wss');
+const WS_URL = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://');
 
 function App() {
   const [isRecording, setIsRecording] = useState(false);
