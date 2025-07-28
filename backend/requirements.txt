@@ -18,3 +18,5 @@ passlib[bcrypt]==1.7.4
 emergentintegrations==0.1.0
 duckduckgo-search==8.1.1
 pyttsx3==2.90
+noisereduce
+soundfile
