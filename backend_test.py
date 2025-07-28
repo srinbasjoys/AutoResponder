@@ -591,12 +591,14 @@ class BackendTester:
                 if "models" in data and isinstance(data["models"], dict):
                     if "perplexity" in data["models"]:
                         perplexity_models = data["models"]["perplexity"]
-                        expected_model = "llama-3.1-sonar-small-128k-online"
-                        if expected_model in perplexity_models:
-                            self.log_test("Models Endpoint (Perplexity)", True, f"Perplexity models available: {len(perplexity_models)}")
+                        # Check for current 2025 Perplexity models
+                        expected_models = ["sonar", "sonar-pro", "sonar-reasoning"]
+                        found_models = [model for model in expected_models if model in perplexity_models]
+                        if len(found_models) > 0:
+                            self.log_test("Models Endpoint (Perplexity)", True, f"Perplexity models available: {len(perplexity_models)} models, found: {found_models}")
                             return True
                         else:
-                            self.log_test("Models Endpoint (Perplexity)", False, f"Expected model {expected_model} not found")
+                            self.log_test("Models Endpoint (Perplexity)", False, f"Expected models {expected_models} not found in {perplexity_models}")
                             return False
                     else:
                         self.log_test("Models Endpoint (Perplexity)", False, "Perplexity provider not found in models")
