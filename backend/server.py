@@ -332,6 +332,74 @@ async def get_ai_response(user_input: str, session_id: str, provider: str, model
         logger.error(f"Error getting AI response: {e}")
         return f"Error generating response: {str(e)}"
 
+async def stream_ai_response(websocket: WebSocket, user_input: str, session_id: str, provider: str, model: str):
+    """Stream AI response to WebSocket with real-time updates"""
+    try:
+        # Get API key for the provider
+        provider_config = await db.providers.find_one({"name": provider, "user_id": "default"})
+        if not provider_config:
+            await websocket.send_text(json.dumps({
+                "type": "error",
+                "message": f"Provider '{provider}' not configured. Please add API key in settings.",
+                "timestamp": datetime.now().isoformat()
+            }))
+            return
+        
+        api_key = provider_config["api_key"]
+        
+        # Create or get existing chat instance for this session
+        chat_key = f"{session_id}_{provider}_{model}"
+        
+        if chat_key not in chat_instances:
+            # Create new chat instance
+            system_message = "You are a helpful AI assistant engaged in a real-time conversation. Provide concise, relevant responses."
+            chat_instances[chat_key] = LlmChat(
+                api_key=api_key,
+                session_id=session_id,
+                system_message=system_message
+            ).with_model(provider, model).with_max_tokens(1000)
+        
+        chat = chat_instances[chat_key]
+        
+        # Send processing status
+        await websocket.send_text(json.dumps({
+            "type": "ai_thinking",
+            "timestamp": datetime.now().isoformat()
+        }))
+        
+        # Send message and get response
+        user_message = UserMessage(text=user_input)
+        response = await chat.send_message(user_message)
+        
+        # Send the complete AI response
+        await websocket.send_text(json.dumps({
+            "type": "ai_response",
+            "text": response,
+            "timestamp": datetime.now().isoformat()
+        }))
+        
+        # Save conversation to database
+        conversation_id = str(uuid.uuid4())
+        conversation_data = {
+            "id": conversation_id,
+            "session_id": session_id,
+            "user_input": user_input,
+            "ai_response": response,
+            "timestamp": datetime.now(),
+            "provider": provider,
+            "model": model
+        }
+        
+        await db.conversations.insert_one(conversation_data)
+        
+    except Exception as e:
+        logger.error(f"Error streaming AI response: {e}")
+        await websocket.send_text(json.dumps({
+            "type": "error",
+            "message": f"Error generating response: {str(e)}",
+            "timestamp": datetime.now().isoformat()
+        }))
+
 @app.post("/api/process-audio")
 async def process_audio(request: AudioProcessRequest):
     """Process audio input and generate AI response"""
