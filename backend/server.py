@@ -405,33 +405,53 @@ async def transcribe_audio_with_whisper(audio_data: str, noise_reduction: bool =
     """Transcribe audio using OpenAI Whisper or fallback method"""
     if openai_client is None:
         logger.info("OpenAI client not available, using fallback transcription")
-        return await transcribe_audio_fallback(audio_data)
+        return await transcribe_audio_fallback(audio_data, noise_reduction, 
+                                             noise_reduction_strength, 
+                                             auto_gain_control, high_pass_filter)
     
     try:
         # Decode base64 audio
         audio_bytes = base64.b64decode(audio_data)
         
-        # Create temporary file
+        # Load audio with librosa for noise cancellation
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
             temp_file.write(audio_bytes)
             temp_file.flush()
             
+            # Load audio with librosa
+            audio_array, sample_rate = librosa.load(temp_file.name, sr=16000)
+            
+            # Apply noise cancellation if enabled
+            if noise_reduction:
+                audio_array = await apply_noise_cancellation(
+                    audio_array, sample_rate, noise_reduction, 
+                    noise_reduction_strength, auto_gain_control, high_pass_filter
+                )
+            
+            # Save enhanced audio to temporary file
+            enhanced_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+            sf.write(enhanced_temp.name, audio_array, sample_rate)
+            enhanced_temp.close()
+            
             # Use OpenAI Whisper for transcription
-            with open(temp_file.name, "rb") as audio_file:
+            with open(enhanced_temp.name, "rb") as audio_file:
                 transcript = openai_client.audio.transcriptions.create(
                     model="whisper-1",
                     file=audio_file,
                     response_format="text"
                 )
             
-            # Clean up temp file
+            # Clean up temp files
             os.unlink(temp_file.name)
+            os.unlink(enhanced_temp.name)
             
             return transcript.strip()
     except Exception as e:
         logger.error(f"Error transcribing with Whisper: {e}")
         # Fallback to SpeechRecognition
-        return await transcribe_audio_fallback(audio_data)
+        return await transcribe_audio_fallback(audio_data, noise_reduction, 
+                                             noise_reduction_strength, 
+                                             auto_gain_control, high_pass_filter)
 
 async def transcribe_audio_fallback(audio_data: str) -> str:
     """Fallback transcription using SpeechRecognition library"""
