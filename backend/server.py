@@ -314,7 +314,94 @@ async def get_conversation(session_id: str, limit: int = 5):
         logger.error(f"Error fetching conversation: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch conversation")
 
-async def transcribe_audio_with_whisper(audio_data: str) -> str:
+async def apply_noise_cancellation(audio_data: np.ndarray, sample_rate: int = 16000, 
+                                 noise_reduction: bool = True, 
+                                 noise_reduction_strength: float = 0.7,
+                                 auto_gain_control: bool = True,
+                                 high_pass_filter: bool = True) -> np.ndarray:
+    """
+    Apply comprehensive noise cancellation and audio enhancement
+    """
+    try:
+        logger.info("Applying noise cancellation and audio enhancement...")
+        
+        # Ensure audio is float32
+        if audio_data.dtype != np.float32:
+            audio_data = audio_data.astype(np.float32)
+        
+        # Normalize audio to prevent clipping
+        if np.max(np.abs(audio_data)) > 0:
+            audio_data = audio_data / np.max(np.abs(audio_data))
+        
+        enhanced_audio = audio_data.copy()
+        
+        # 1. High-pass filter to remove low-frequency noise (like AC hum)
+        if high_pass_filter:
+            try:
+                # Design high-pass filter (remove frequencies below 80Hz)
+                sos = signal.butter(4, 80, btype='highpass', fs=sample_rate, output='sos')
+                enhanced_audio = signal.sosfilt(sos, enhanced_audio)
+                logger.info("✓ High-pass filter applied")
+            except Exception as e:
+                logger.warning(f"High-pass filter failed: {e}")
+        
+        # 2. Spectral noise reduction
+        if noise_reduction and noise_reduction_strength > 0:
+            try:
+                # Use first 0.5 seconds as noise sample, or entire audio if shorter
+                noise_duration = min(0.5, len(enhanced_audio) / sample_rate / 2)
+                noise_sample_length = int(noise_duration * sample_rate)
+                
+                if len(enhanced_audio) > noise_sample_length:
+                    # Apply noise reduction using noisereduce library
+                    enhanced_audio = nr.reduce_noise(
+                        y=enhanced_audio, 
+                        sr=sample_rate,
+                        stationary=True,  # Assume stationary noise
+                        prop_decrease=noise_reduction_strength,  # Proportion of noise to reduce
+                        n_std_thresh_stationary=1.5,  # Threshold for stationary noise
+                        n_fft=1024,  # FFT size
+                        n_jobs=1  # Single threaded for stability
+                    )
+                    logger.info(f"✓ Spectral noise reduction applied (strength: {noise_reduction_strength})")
+                else:
+                    logger.info("Audio too short for noise reduction")
+            except Exception as e:
+                logger.warning(f"Noise reduction failed: {e}")
+        
+        # 3. Auto Gain Control (AGC) to normalize volume
+        if auto_gain_control:
+            try:
+                # Calculate RMS and normalize to target level
+                rms = np.sqrt(np.mean(enhanced_audio**2))
+                if rms > 0:
+                    target_rms = 0.2  # Target RMS level
+                    gain = target_rms / rms
+                    # Limit gain to prevent excessive amplification
+                    gain = min(gain, 5.0)  # Max 5x amplification
+                    enhanced_audio = enhanced_audio * gain
+                    logger.info(f"✓ Auto gain control applied (gain: {gain:.2f}x)")
+            except Exception as e:
+                logger.warning(f"Auto gain control failed: {e}")
+        
+        # 4. Soft limiting to prevent clipping
+        enhanced_audio = np.tanh(enhanced_audio * 0.9) * 0.9
+        
+        # 5. Final normalization
+        if np.max(np.abs(enhanced_audio)) > 0:
+            enhanced_audio = enhanced_audio / np.max(np.abs(enhanced_audio)) * 0.95
+        
+        logger.info("✓ Noise cancellation and audio enhancement completed")
+        return enhanced_audio.astype(np.float32)
+        
+    except Exception as e:
+        logger.error(f"Error in noise cancellation: {e}")
+        return audio_data  # Return original audio if enhancement fails
+
+async def transcribe_audio_with_whisper(audio_data: str, noise_reduction: bool = True, 
+                                      noise_reduction_strength: float = 0.7,
+                                      auto_gain_control: bool = True,
+                                      high_pass_filter: bool = True) -> str:
     """Transcribe audio using OpenAI Whisper or fallback method"""
     if openai_client is None:
         logger.info("OpenAI client not available, using fallback transcription")
