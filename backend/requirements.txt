@@ -16,4 +16,5 @@ aiofiles==23.2.1
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 emergentintegrations==0.1.0
-duckduckgo-search==8.1.1pyttsx3==2.90
+duckduckgo-search==8.1.1
+pyttsx3==2.90
