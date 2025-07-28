@@ -529,6 +529,24 @@ function App() {
               </span>
             </div>
             <div className="flex items-center space-x-2">
+              {/* Connection Status */}
+              <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs ${
+                isConnected 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                {isConnected ? (
+                  <Wifi className="w-3 h-3" />
+                ) : (
+                  <WifiOff className="w-3 h-3" />
+                )}
+                <span>
+                  {connectionStatus === 'connecting' ? 'Connecting...' : 
+                   connectionStatus === 'connected' ? 'Connected' : 
+                   connectionStatus === 'error' ? 'Error' : 'Disconnected'}
+                </span>
+              </div>
+              
               <button
                 onClick={clearConversations}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
