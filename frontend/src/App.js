@@ -1025,6 +1025,15 @@ function App() {
           </div>
         </div>
 
+        {/* Audio Enhancement Settings Panel */}
+        {showAudioSettings && (
+          <AudioEnhancementPanel
+            audioEnhancement={audioEnhancement}
+            onConfigChange={setAudioEnhancement}
+            onClose={() => setShowAudioSettings(false)}
+          />
+        )}
+
         {/* Settings Panel */}
         {showSettings && (
           <SettingsPanel
