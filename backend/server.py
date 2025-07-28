@@ -277,25 +277,76 @@ async def transcribe_audio_with_whisper(audio_data: str) -> str:
 async def transcribe_audio_fallback(audio_data: str) -> str:
     """Fallback transcription using SpeechRecognition library"""
     try:
-        # Decode base64 audio
-        audio_bytes = base64.b64decode(audio_data)
+        logger.info("Starting fallback transcription with Google Speech Recognition")
         
-        # Convert to audio segment
-        audio_segment = AudioSegment.from_file(io.BytesIO(audio_bytes))
+        # Step 1: Decode base64 audio
+        try:
+            audio_bytes = base64.b64decode(audio_data)
+            logger.info(f"Successfully decoded base64 audio data: {len(audio_bytes)} bytes")
+        except Exception as e:
+            logger.error(f"Error decoding base64 audio: {e}")
+            return "Error: Could not decode audio data. Please try recording again."
         
-        # Export as wav for speech recognition
-        wav_io = io.BytesIO()
-        audio_segment.export(wav_io, format="wav")
-        wav_io.seek(0)
+        # Step 2: Convert to audio segment
+        try:
+            audio_segment = AudioSegment.from_file(io.BytesIO(audio_bytes))
+            logger.info(f"Audio segment loaded - Duration: {len(audio_segment)}ms, Channels: {audio_segment.channels}, Sample Rate: {audio_segment.frame_rate}")
+        except Exception as e:
+            logger.error(f"Error loading audio segment: {e}")
+            return "Error: Could not process audio format. Please try recording again."
         
-        # Use speech recognition
-        recognizer = sr.Recognizer()
-        with sr.AudioFile(wav_io) as source:
-            audio = recognizer.record(source)
-            text = recognizer.recognize_google(audio)
-            return text
+        # Step 3: Export as wav for speech recognition
+        try:
+            wav_io = io.BytesIO()
+            audio_segment.export(wav_io, format="wav")
+            wav_io.seek(0)
+            logger.info(f"Audio exported to WAV format: {wav_io.getvalue().__len__()} bytes")
+        except Exception as e:
+            logger.error(f"Error exporting audio to WAV: {e}")
+            return "Error: Could not convert audio to WAV format. Please try recording again."
+        
+        # Step 4: Use speech recognition
+        try:
+            recognizer = sr.Recognizer()
+            
+            # Adjust recognizer settings for better accuracy
+            recognizer.energy_threshold = 300
+            recognizer.dynamic_energy_threshold = True
+            recognizer.pause_threshold = 0.8
+            recognizer.phrase_threshold = 0.3
+            recognizer.non_speaking_duration = 0.8
+            
+            with sr.AudioFile(wav_io) as source:
+                logger.info("Recording audio for speech recognition...")
+                # Adjust for ambient noise
+                recognizer.adjust_for_ambient_noise(source, duration=0.5)
+                audio = recognizer.record(source)
+                
+                logger.info("Calling Google Speech Recognition API...")
+                # Use Google Speech Recognition with timeout and language settings
+                text = recognizer.recognize_google(
+                    audio, 
+                    language="en-US",
+                    show_all=False
+                )
+                
+                logger.info(f"Successfully transcribed text: '{text}'")
+                return text
+                
+        except sr.UnknownValueError:
+            logger.warning("Google Speech Recognition could not understand the audio")
+            return "Could not understand the audio. Please speak clearly and try again."
+            
+        except sr.RequestError as e:
+            logger.error(f"Google Speech Recognition service error: {e}")
+            return "Speech recognition service is temporarily unavailable. Please try again later."
+            
+        except Exception as e:
+            logger.error(f"Unexpected error during speech recognition: {e}")
+            return "An error occurred during speech recognition. Please try again."
+            
     except Exception as e:
-        logger.error(f"Error in fallback transcription: {e}")
+        logger.error(f"Unexpected error in fallback transcription: {e}")
         return "Sorry, I couldn't understand the audio. Please try again."
 
 async def stream_ai_response(websocket: WebSocket, user_input: str, session_id: str, provider: str, model: str):
