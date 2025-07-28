@@ -622,6 +622,100 @@ async def stream_ai_response(websocket: WebSocket, user_input: str, session_id: 
             "timestamp": datetime.now().isoformat()
         }))
 
+@app.post("/api/audio-enhancement-config")
+async def save_audio_enhancement_config(config: AudioEnhancementConfig):
+    """Save audio enhancement configuration for a session"""
+    try:
+        config_data = {
+            "session_id": config.session_id,
+            "noise_reduction": config.noise_reduction,
+            "noise_reduction_strength": config.noise_reduction_strength,
+            "auto_gain_control": config.auto_gain_control,
+            "high_pass_filter": config.high_pass_filter,
+            "updated_at": datetime.now()
+        }
+        
+        # Update or insert configuration
+        await db.audio_configs.update_one(
+            {"session_id": config.session_id},
+            {"$set": config_data},
+            upsert=True
+        )
+        
+        return {
+            "message": "Audio enhancement configuration saved successfully",
+            "config": config_data
+        }
+    except Exception as e:
+        logger.error(f"Error saving audio enhancement config: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save audio enhancement configuration")
+
+@app.get("/api/audio-enhancement-config/{session_id}")
+async def get_audio_enhancement_config(session_id: str):
+    """Get audio enhancement configuration for a session"""
+    try:
+        config = await db.audio_configs.find_one({"session_id": session_id})
+        
+        if config:
+            return {
+                "session_id": config["session_id"],
+                "noise_reduction": config.get("noise_reduction", True),
+                "noise_reduction_strength": config.get("noise_reduction_strength", 0.7),
+                "auto_gain_control": config.get("auto_gain_control", True),
+                "high_pass_filter": config.get("high_pass_filter", True),
+                "updated_at": config.get("updated_at")
+            }
+        else:
+            # Return default configuration
+            return {
+                "session_id": session_id,
+                "noise_reduction": True,
+                "noise_reduction_strength": 0.7,
+                "auto_gain_control": True,
+                "high_pass_filter": True,
+                "updated_at": None
+            }
+            
+    except Exception as e:
+        logger.error(f"Error fetching audio enhancement config: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch audio enhancement configuration")
+
+@app.get("/api/audio-stats/{session_id}")
+async def get_audio_processing_stats(session_id: str):
+    """Get audio processing statistics for a session"""
+    try:
+        # Get recent conversations with audio enhancement data
+        conversations = []
+        async for conv in db.conversations.find(
+            {"session_id": session_id, "audio_enhancement": {"$exists": True}}
+        ).sort("timestamp", -1).limit(10):
+            conversations.append({
+                "timestamp": conv["timestamp"],
+                "audio_enhancement": conv.get("audio_enhancement", {}),
+                "transcription_success": bool(conv.get("user_input"))
+            })
+        
+        # Calculate statistics
+        total_conversations = len(conversations)
+        successful_transcriptions = sum(1 for conv in conversations if conv["transcription_success"])
+        success_rate = (successful_transcriptions / total_conversations * 100) if total_conversations > 0 else 0
+        
+        # Audio enhancement usage
+        noise_reduction_usage = sum(1 for conv in conversations 
+                                  if conv.get("audio_enhancement", {}).get("noise_reduction", False))
+        
+        return {
+            "session_id": session_id,
+            "total_audio_processed": total_conversations,
+            "transcription_success_rate": round(success_rate, 2),
+            "noise_reduction_usage": round((noise_reduction_usage / total_conversations * 100) if total_conversations > 0 else 0, 2),
+            "recent_conversations": conversations
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching audio processing stats: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch audio processing statistics")
+
 async def get_ai_response(user_input: str, session_id: str, provider: str, model: str) -> str:
     """Generate AI response using the specified provider and model"""
     try:
