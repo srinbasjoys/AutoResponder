@@ -81,8 +81,20 @@ function App() {
       const ws = new WebSocket(wsUrl);
       websocketRef.current = ws;
       
+      // Set timeout for connection
+      const connectionTimeout = setTimeout(() => {
+        if (ws.readyState === WebSocket.CONNECTING) {
+          console.log('WebSocket connection timeout, falling back to HTTP');
+          ws.close();
+          setConnectionStatus('fallback');
+          setIsConnected(false);
+          setWsError('Using HTTP fallback mode');
+        }
+      }, 5000);
+      
       ws.onopen = () => {
         console.log('WebSocket connected');
+        clearTimeout(connectionTimeout);
         setIsConnected(true);
         setConnectionStatus('connected');
         setWsError(null);
@@ -109,33 +121,35 @@ function App() {
       
       ws.onclose = (event) => {
         console.log('WebSocket disconnected:', event.code, event.reason);
+        clearTimeout(connectionTimeout);
         setIsConnected(false);
-        setConnectionStatus('disconnected');
+        setConnectionStatus('fallback');
+        setWsError('Using HTTP fallback mode');
         
         // Clear ping interval
         if (pingIntervalRef.current) {
           clearInterval(pingIntervalRef.current);
         }
         
-        // Attempt to reconnect after 3 seconds
-        if (event.code !== 1000) { // Not a normal closure
-          reconnectTimeoutRef.current = setTimeout(() => {
-            console.log('Attempting to reconnect WebSocket...');
-            initializeWebSocket();
-          }, 3000);
+        // Don't retry connection if it's a normal closure or timeout
+        if (event.code !== 1000 && event.code !== 1006) {
+          console.log('WebSocket connection lost, using HTTP fallback');
         }
       };
       
       ws.onerror = (error) => {
         console.error('WebSocket error:', error);
-        setWsError('Connection error');
-        setConnectionStatus('error');
+        clearTimeout(connectionTimeout);
+        setWsError('Connection failed - using HTTP fallback');
+        setConnectionStatus('fallback');
+        setIsConnected(false);
       };
       
     } catch (error) {
       console.error('Error initializing WebSocket:', error);
-      setWsError('Failed to initialize connection');
-      setConnectionStatus('error');
+      setWsError('Failed to initialize connection - using HTTP fallback');
+      setConnectionStatus('fallback');
+      setIsConnected(false);
     }
   };
 
