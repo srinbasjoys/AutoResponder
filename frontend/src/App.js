@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Settings, MessageCircle, Brain, Zap, Trash2, ChevronDown, Search, Globe, Volume2, VolumeX } from 'lucide-react';
+import { Mic, MicOff, Settings, MessageCircle, Brain, Zap, Trash2, ChevronDown, Search, Globe, Volume2, VolumeX, Wifi, WifiOff } from 'lucide-react';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+const WS_URL = BACKEND_URL.replace('http', 'ws').replace('https', 'wss');
 
 function App() {
   const [isRecording, setIsRecording] = useState(false);
@@ -17,6 +18,11 @@ function App() {
   const [recordingTime, setRecordingTime] = useState(0);
   const [transcribedText, setTranscribedText] = useState('');
   
+  // WebSocket states
+  const [isConnected, setIsConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('disconnected');
+  const [wsError, setWsError] = useState(null);
+  
   // Web search states
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -29,10 +35,18 @@ function App() {
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [currentAudio, setCurrentAudio] = useState(null);
   
+  // Real-time processing states
+  const [isStreamingMode, setIsStreamingMode] = useState(false);
+  const [realtimeTranscription, setRealtimeTranscription] = useState('');
+  const [aiThinking, setAiThinking] = useState(false);
+  
   const mediaRecorderRef = useRef(null);
   const recordingTimerRef = useRef(null);
   const streamRef = useRef(null);
   const audioRef = useRef(null);
+  const websocketRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
+  const pingIntervalRef = useRef(null);
 
   useEffect(() => {
     fetchAvailableModels();
