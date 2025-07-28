@@ -141,7 +141,7 @@ async def startup_event():
             perplexity_provider = {
                 "name": "perplexity",
                 "api_key": perplexity_api_key,
-                "model": "llama-3.1-sonar-small-128k-online",
+                "model": "sonar",
                 "created_at": datetime.now(),
                 "user_id": "default"
             }
