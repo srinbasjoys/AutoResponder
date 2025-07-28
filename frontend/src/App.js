@@ -669,7 +669,9 @@ function App() {
                   {isProcessing && (
                     <div className="flex items-center justify-center space-x-2 text-blue-600">
                       <Zap className="w-4 h-4 animate-pulse" />
-                      <span className="font-medium">Processing audio...</span>
+                      <span className="font-medium">
+                        {aiThinking ? 'AI is thinking...' : 'Processing audio...'}
+                      </span>
                     </div>
                   )}
                   {isRecording && (
@@ -685,12 +687,28 @@ function App() {
                     </div>
                   )}
                   {!isRecording && !isProcessing && (
-                    <p className="text-gray-500">
-                      Press and hold to start recording
-                    </p>
+                    <div className="space-y-2">
+                      <p className="text-gray-500">
+                        Press and hold to start recording
+                      </p>
+                      {!isConnected && (
+                        <p className="text-red-500 text-sm">
+                          WebSocket disconnected - using fallback mode
+                        </p>
+                      )}
+                    </div>
                   )}
                   
-                  {/* Show transcribed text */}
+                  {/* Show real-time transcription */}
+                  {realtimeTranscription && (
+                    <div className="mt-2 p-3 bg-yellow-50 rounded-lg">
+                      <p className="text-sm text-yellow-800">
+                        <strong>Listening:</strong> "{realtimeTranscription}"
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Show final transcribed text */}
                   {transcribedText && !isProcessing && (
                     <div className="mt-2 p-3 bg-blue-50 rounded-lg">
                       <p className="text-sm text-blue-800">
