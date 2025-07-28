@@ -1052,8 +1052,14 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                         provider = message.get("provider", "groq")
                         model = message.get("model", "llama-3.1-8b-instant")
                         
-                        # Transcribe audio
-                        user_input = await transcribe_audio_with_whisper(audio_data)
+                        # Transcribe audio with noise cancellation
+                        user_input = await transcribe_audio_with_whisper(
+                            audio_data,
+                            noise_reduction=message.get("noise_reduction", True),
+                            noise_reduction_strength=message.get("noise_reduction_strength", 0.7),
+                            auto_gain_control=message.get("auto_gain_control", True),
+                            high_pass_filter=message.get("high_pass_filter", True)
+                        )
                         
                         # Send transcription update
                         await websocket.send_text(json.dumps({
