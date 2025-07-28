@@ -676,7 +676,7 @@ function App() {
               {/* Recording Interface */}
               <div className="flex flex-col items-center space-y-6">
                 
-                {/* Recording Button */}
+                {/* Recording Button with Enhanced Visual Feedback */}
                 <div className="relative">
                   <button
                     onMouseDown={startRecording}
@@ -690,12 +690,12 @@ function App() {
                       ${isRecording 
                         ? 'bg-red-500 recording-animation shadow-lg shadow-red-500/30' 
                         : isProcessing
-                        ? 'bg-yellow-500 shadow-lg shadow-yellow-500/30'
+                        ? 'bg-yellow-500 shadow-lg shadow-yellow-500/30 processing-pulse'
                         : isConnected
                         ? 'bg-blue-500 hover:bg-blue-600 shadow-lg shadow-blue-500/30'
                         : 'bg-green-500 hover:bg-green-600 shadow-lg shadow-green-500/30'
                       }
-                      ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                      ${isProcessing ? 'opacity-90 cursor-not-allowed' : 'cursor-pointer'}
                     `}
                   >
                     {isProcessing ? (
@@ -711,10 +711,19 @@ function App() {
                     )}
                   </button>
                   
+                  {/* Enhanced Audio Quality Indicator */}
+                  {!isRecording && !isProcessing && audioEnhancement.noise_reduction && (
+                    <div className="absolute -top-2 -right-2">
+                      <div className="audio-quality-indicator audio-quality-high">
+                        ✨ Enhanced
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Recording Timer */}
                   {isRecording && (
-                    <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2">
-                      <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                    <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2">
+                      <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium animate-pulse">
                         {recordingTime}s / 30s
                       </div>
                     </div>
