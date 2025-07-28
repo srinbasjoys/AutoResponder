@@ -21,6 +21,10 @@ import io
 from duckduckgo_search import DDGS
 import pyttsx3
 import threading
+import librosa
+import noisereduce as nr
+import soundfile as sf
+from scipy import signal
 
 # Load environment variables
 load_dotenv()
