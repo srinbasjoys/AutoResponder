@@ -652,7 +652,7 @@ function App() {
                     onMouseUp={stopRecording}
                     onTouchStart={startRecording}
                     onTouchEnd={stopRecording}
-                    disabled={isProcessing || !isConnected}
+                    disabled={isProcessing}
                     className={`
                       w-32 h-32 rounded-full flex items-center justify-center text-white font-semibold text-lg
                       transition-all duration-200 transform hover:scale-105 active:scale-95
@@ -660,11 +660,11 @@ function App() {
                         ? 'bg-red-500 recording-animation shadow-lg shadow-red-500/30' 
                         : isProcessing
                         ? 'bg-yellow-500 shadow-lg shadow-yellow-500/30'
-                        : !isConnected
-                        ? 'bg-gray-400 shadow-lg shadow-gray-400/30'
-                        : 'bg-blue-500 hover:bg-blue-600 shadow-lg shadow-blue-500/30'
+                        : isConnected
+                        ? 'bg-blue-500 hover:bg-blue-600 shadow-lg shadow-blue-500/30'
+                        : 'bg-green-500 hover:bg-green-600 shadow-lg shadow-green-500/30'
                       }
-                      ${isProcessing || !isConnected ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                      ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                     `}
                   >
                     {isProcessing ? (
@@ -675,8 +675,6 @@ function App() {
                       )
                     ) : isRecording ? (
                       <MicOff className="w-8 h-8" />
-                    ) : !isConnected ? (
-                      <WifiOff className="w-8 h-8" />
                     ) : (
                       <Mic className="w-8 h-8" />
                     )}
