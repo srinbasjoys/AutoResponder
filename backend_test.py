@@ -538,7 +538,7 @@ class BackendTester:
             provider_data = {
                 "name": "perplexity",
                 "api_key": "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",
-                "model": "llama-3.1-sonar-small-128k-online"
+                "model": "sonar"  # Updated to current 2025 model
             }
             
             save_response = requests.post(f"{API_BASE}/providers", 
@@ -554,7 +554,7 @@ class BackendTester:
                 "query": "What are the latest developments in renewable energy?",
                 "session_id": self.session_id,
                 "provider": "perplexity",
-                "model": "llama-3.1-sonar-small-128k-online",
+                "model": "sonar",  # Updated to current 2025 model
                 "max_results": 3,
                 "include_search": True
             }
