@@ -1195,4 +1195,200 @@ function SettingsPanel({
   );
 }
 
+// Audio Enhancement Settings Panel Component
+function AudioEnhancementPanel({ audioEnhancement, onConfigChange, onClose }) {
+  const [config, setConfig] = useState(audioEnhancement);
+
+  const handleConfigUpdate = (key, value) => {
+    const newConfig = { ...config, [key]: value };
+    setConfig(newConfig);
+    onConfigChange(newConfig);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl p-8 max-w-lg w-full mx-4 max-h-90vh overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-green-500 rounded-lg">
+              <Mic className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900">Audio Enhancement</h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-2xl"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="space-y-6">
+          {/* Noise Reduction */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={config.noise_reduction}
+                  onChange={(e) => handleConfigUpdate('noise_reduction', e.target.checked)}
+                  className="rounded border-gray-300 text-green-500 focus:ring-green-500"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Noise Reduction
+                </span>
+              </label>
+              <span className="text-xs text-gray-500">
+                {config.noise_reduction ? 'Enabled' : 'Disabled'}
+              </span>
+            </div>
+            
+            {config.noise_reduction && (
+              <div className="ml-6 space-y-2">
+                <label className="block text-xs font-medium text-gray-600">
+                  Strength: {Math.round(config.noise_reduction_strength * 100)}%
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={config.noise_reduction_strength}
+                  onChange={(e) => handleConfigUpdate('noise_reduction_strength', parseFloat(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-green"
+                />
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>Mild</span>
+                  <span>Aggressive</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Auto Gain Control */}
+          <div className="flex items-center justify-between">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={config.auto_gain_control}
+                onChange={(e) => handleConfigUpdate('auto_gain_control', e.target.checked)}
+                className="rounded border-gray-300 text-green-500 focus:ring-green-500"
+              />
+              <div>
+                <span className="text-sm font-medium text-gray-700">
+                  Auto Gain Control
+                </span>
+                <p className="text-xs text-gray-500">
+                  Automatically adjusts volume levels
+                </p>
+              </div>
+            </label>
+            <span className="text-xs text-gray-500">
+              {config.auto_gain_control ? 'On' : 'Off'}
+            </span>
+          </div>
+
+          {/* High Pass Filter */}
+          <div className="flex items-center justify-between">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={config.high_pass_filter}
+                onChange={(e) => handleConfigUpdate('high_pass_filter', e.target.checked)}
+                className="rounded border-gray-300 text-green-500 focus:ring-green-500"
+              />
+              <div>
+                <span className="text-sm font-medium text-gray-700">
+                  High-Pass Filter
+                </span>
+                <p className="text-xs text-gray-500">
+                  Removes low-frequency background noise
+                </p>
+              </div>
+            </label>
+            <span className="text-xs text-gray-500">
+              {config.high_pass_filter ? 'On' : 'Off'}
+            </span>
+          </div>
+
+          {/* Presets */}
+          <div className="border-t pt-4">
+            <h4 className="text-sm font-medium text-gray-700 mb-3">Quick Presets:</h4>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => {
+                  const preset = {
+                    noise_reduction: true,
+                    noise_reduction_strength: 0.9,
+                    auto_gain_control: true,
+                    high_pass_filter: true
+                  };
+                  setConfig(preset);
+                  onConfigChange(preset);
+                }}
+                className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg text-xs font-medium transition-colors"
+              >
+                🏢 Office/Noisy
+              </button>
+              <button
+                onClick={() => {
+                  const preset = {
+                    noise_reduction: true,
+                    noise_reduction_strength: 0.5,
+                    auto_gain_control: true,
+                    high_pass_filter: false
+                  };
+                  setConfig(preset);
+                  onConfigChange(preset);
+                }}
+                className="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg text-xs font-medium transition-colors"
+              >
+                🏠 Home/Quiet
+              </button>
+              <button
+                onClick={() => {
+                  const preset = {
+                    noise_reduction: true,
+                    noise_reduction_strength: 0.8,
+                    auto_gain_control: true,
+                    high_pass_filter: true
+                  };
+                  setConfig(preset);
+                  onConfigChange(preset);
+                }}
+                className="px-3 py-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded-lg text-xs font-medium transition-colors"
+              >
+                🚗 Car/Mobile
+              </button>
+              <button
+                onClick={() => {
+                  const preset = {
+                    noise_reduction: false,
+                    noise_reduction_strength: 0.0,
+                    auto_gain_control: false,
+                    high_pass_filter: false
+                  };
+                  setConfig(preset);
+                  onConfigChange(preset);
+                }}
+                className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg text-xs font-medium transition-colors"
+              >
+                🎤 Studio/Raw
+              </button>
+            </div>
+          </div>
+
+          {/* Save Button */}
+          <button
+            onClick={onClose}
+            className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+          >
+            Apply Settings
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default App;
