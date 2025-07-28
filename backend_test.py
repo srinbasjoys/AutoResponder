@@ -1001,7 +1001,7 @@ class BackendTester:
         print("🚀 Starting AutoResponder Backend API Tests")
         print("=" * 60)
         
-        # Test sequence - prioritizing audio processing tests as requested
+        # Test sequence - prioritizing noise cancellation and audio enhancement tests as requested
         tests = [
             ("Health Check", self.test_health_endpoint),
             ("Models Endpoint", self.test_models_endpoint),
@@ -1009,10 +1009,21 @@ class BackendTester:
             ("Save Provider", self.test_save_provider),
             ("Get Providers", self.test_get_providers),
             ("Providers Endpoint (Perplexity)", self.test_providers_endpoint_includes_perplexity),
-            # Audio processing tests - main focus of this review
+            
+            # NEW AUDIO ENHANCEMENT CONFIGURATION ENDPOINTS - HIGH PRIORITY
+            ("Audio Enhancement Config Save", self.test_audio_enhancement_config_save),
+            ("Audio Enhancement Config Get", self.test_audio_enhancement_config_get),
+            ("Audio Stats", self.test_audio_stats),
+            
+            # NOISE CANCELLATION & AUDIO ENHANCEMENT TESTS - MAIN FOCUS
             ("Speech Recognition Connectivity", self.test_speech_recognition_connectivity),
             ("Audio Transcription Fallback", self.test_audio_transcription_fallback),
             ("Process Audio", self.test_process_audio),
+            ("Process Audio (No Noise Cancellation)", self.test_process_audio_with_noise_cancellation_disabled),
+            ("Process Audio (Different Noise Strengths)", self.test_process_audio_with_different_noise_strengths),
+            ("Process Audio (Selective Enhancements)", self.test_process_audio_with_selective_enhancements),
+            ("Conversation Persistence (Audio Enhancement)", self.test_conversation_persistence_with_audio_enhancement),
+            
             # Other functionality tests
             ("Web Search", self.test_web_search),
             ("Web Search with AI", self.test_web_search_with_ai),
