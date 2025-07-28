@@ -54,7 +54,176 @@ function App() {
     fetchConversations();
     // Set up Groq as default with API key
     setupDefaultProvider();
+    
+    // Initialize WebSocket connection
+    initializeWebSocket();
+    
+    // Cleanup on unmount
+    return () => {
+      if (websocketRef.current) {
+        websocketRef.current.close();
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (pingIntervalRef.current) {
+        clearInterval(pingIntervalRef.current);
+      }
+    };
   }, []);
+
+  const initializeWebSocket = () => {
+    try {
+      setConnectionStatus('connecting');
+      const wsUrl = `${WS_URL}/ws/${sessionId}`;
+      console.log('Connecting to WebSocket:', wsUrl);
+      
+      const ws = new WebSocket(wsUrl);
+      websocketRef.current = ws;
+      
+      ws.onopen = () => {
+        console.log('WebSocket connected');
+        setIsConnected(true);
+        setConnectionStatus('connected');
+        setWsError(null);
+        
+        // Start ping interval to keep connection alive
+        pingIntervalRef.current = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              type: 'ping',
+              timestamp: new Date().toISOString()
+            }));
+          }
+        }, 25000); // Ping every 25 seconds
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          handleWebSocketMessage(data);
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+        }
+      };
+      
+      ws.onclose = (event) => {
+        console.log('WebSocket disconnected:', event.code, event.reason);
+        setIsConnected(false);
+        setConnectionStatus('disconnected');
+        
+        // Clear ping interval
+        if (pingIntervalRef.current) {
+          clearInterval(pingIntervalRef.current);
+        }
+        
+        // Attempt to reconnect after 3 seconds
+        if (event.code !== 1000) { // Not a normal closure
+          reconnectTimeoutRef.current = setTimeout(() => {
+            console.log('Attempting to reconnect WebSocket...');
+            initializeWebSocket();
+          }, 3000);
+        }
+      };
+      
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        setWsError('Connection error');
+        setConnectionStatus('error');
+      };
+      
+    } catch (error) {
+      console.error('Error initializing WebSocket:', error);
+      setWsError('Failed to initialize connection');
+      setConnectionStatus('error');
+    }
+  };
+
+  const handleWebSocketMessage = (data) => {
+    console.log('WebSocket message received:', data);
+    
+    switch (data.type) {
+      case 'connection_established':
+        console.log('WebSocket connection established for session:', data.session_id);
+        break;
+        
+      case 'pong':
+        // Handle pong response
+        break;
+        
+      case 'processing_audio':
+        setIsProcessing(true);
+        if (data.is_final) {
+          setIsRecording(false);
+          clearInterval(recordingTimerRef.current);
+          setRecordingTime(0);
+        }
+        break;
+        
+      case 'transcription':
+        if (data.is_final) {
+          setTranscribedText(data.text);
+          setRealtimeTranscription('');
+        } else {
+          setRealtimeTranscription(data.text);
+        }
+        break;
+        
+      case 'ai_thinking':
+        setAiThinking(true);
+        break;
+        
+      case 'ai_response':
+        setAiThinking(false);
+        setIsProcessing(false);
+        
+        // Add conversation to the list
+        const newConversation = {
+          id: Date.now().toString(),
+          user_input: transcribedText || realtimeTranscription,
+          ai_response: data.text,
+          timestamp: new Date().toISOString(),
+          provider: currentProvider,
+          model: currentModel
+        };
+        
+        setConversations(prev => [...prev, newConversation]);
+        
+        // Auto-speak if enabled
+        if (autoSpeak) {
+          speakText(data.text);
+        }
+        
+        // Clear transcribed text
+        setTranscribedText('');
+        setRealtimeTranscription('');
+        break;
+        
+      case 'error':
+        setIsProcessing(false);
+        setAiThinking(false);
+        setIsRecording(false);
+        clearInterval(recordingTimerRef.current);
+        setRecordingTime(0);
+        console.error('WebSocket error:', data.message);
+        alert(`Error: ${data.message}`);
+        break;
+        
+      default:
+        console.log('Unknown WebSocket message type:', data.type);
+    }
+  };
+
+  const sendWebSocketMessage = (message) => {
+    if (websocketRef.current && websocketRef.current.readyState === WebSocket.OPEN) {
+      websocketRef.current.send(JSON.stringify(message));
+      return true;
+    } else {
+      console.error('WebSocket not connected');
+      setWsError('Connection not available');
+      return false;
+    }
+  };
 
   const setupDefaultProvider = async () => {
     try {
