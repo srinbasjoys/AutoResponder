@@ -643,55 +643,125 @@ async def web_search_with_ai(request: WebSearchWithAIRequest):
 @app.websocket("/ws/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str):
     """WebSocket endpoint for real-time communication"""
-    await websocket.accept()
-    active_connections[session_id] = websocket
-    
     try:
+        await websocket.accept()
+        active_connections[session_id] = websocket
+        logger.info(f"WebSocket connected for session: {session_id}")
+        
+        # Send connection confirmation
+        await websocket.send_text(json.dumps({
+            "type": "connection_established",
+            "session_id": session_id,
+            "timestamp": datetime.now().isoformat()
+        }))
+        
         while True:
-            # Wait for messages from client
-            data = await websocket.receive_text()
-            message = json.loads(data)
-            
-            if message.get("type") == "audio_data":
-                # Process audio in real-time
-                try:
-                    audio_data = message.get("audio_data")
-                    provider = message.get("provider", "groq")
-                    model = message.get("model", "mixtral-8x7b-32768")
-                    
-                    # Transcribe audio
-                    user_input = await transcribe_audio_with_whisper(audio_data)
-                    
-                    # Send transcription update
+            # Wait for messages from client with timeout
+            try:
+                data = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
+                message = json.loads(data)
+                
+                if message.get("type") == "ping":
+                    # Handle ping/pong for connection health
                     await websocket.send_text(json.dumps({
-                        "type": "transcription",
-                        "text": user_input,
+                        "type": "pong",
                         "timestamp": datetime.now().isoformat()
                     }))
-                    
-                    # Get AI response
-                    ai_response = await get_ai_response(user_input, session_id, provider, model)
-                    
-                    # Send AI response
-                    await websocket.send_text(json.dumps({
-                        "type": "ai_response",
-                        "text": ai_response,
-                        "timestamp": datetime.now().isoformat()
-                    }))
-                    
-                except Exception as e:
+                    continue
+                
+                elif message.get("type") == "audio_chunk":
+                    # Process streaming audio chunks
+                    try:
+                        audio_data = message.get("audio_data")
+                        is_final = message.get("is_final", False)
+                        provider = message.get("provider", "groq")
+                        model = message.get("model", "llama-3.1-8b-instant")
+                        
+                        # Send processing status
+                        await websocket.send_text(json.dumps({
+                            "type": "processing_audio",
+                            "is_final": is_final,
+                            "timestamp": datetime.now().isoformat()
+                        }))
+                        
+                        # Transcribe audio
+                        user_input = await transcribe_audio_with_whisper(audio_data)
+                        
+                        # Send transcription update
+                        await websocket.send_text(json.dumps({
+                            "type": "transcription",
+                            "text": user_input,
+                            "is_final": is_final,
+                            "timestamp": datetime.now().isoformat()
+                        }))
+                        
+                        # Only get AI response if this is the final chunk
+                        if is_final and user_input.strip():
+                            # Get AI response with streaming
+                            await stream_ai_response(websocket, user_input, session_id, provider, model)
+                        
+                    except Exception as e:
+                        logger.error(f"Error processing audio chunk: {e}")
+                        await websocket.send_text(json.dumps({
+                            "type": "error",
+                            "message": f"Error processing audio: {str(e)}",
+                            "timestamp": datetime.now().isoformat()
+                        }))
+                
+                elif message.get("type") == "audio_data":
+                    # Process complete audio data (backward compatibility)
+                    try:
+                        audio_data = message.get("audio_data")
+                        provider = message.get("provider", "groq")
+                        model = message.get("model", "llama-3.1-8b-instant")
+                        
+                        # Transcribe audio
+                        user_input = await transcribe_audio_with_whisper(audio_data)
+                        
+                        # Send transcription update
+                        await websocket.send_text(json.dumps({
+                            "type": "transcription",
+                            "text": user_input,
+                            "timestamp": datetime.now().isoformat()
+                        }))
+                        
+                        # Get AI response with streaming
+                        if user_input.strip():
+                            await stream_ai_response(websocket, user_input, session_id, provider, model)
+                        
+                    except Exception as e:
+                        logger.error(f"Error processing audio data: {e}")
+                        await websocket.send_text(json.dumps({
+                            "type": "error",
+                            "message": f"Error processing audio: {str(e)}",
+                            "timestamp": datetime.now().isoformat()
+                        }))
+                
+                else:
+                    # Handle unknown message types
                     await websocket.send_text(json.dumps({
                         "type": "error",
-                        "message": str(e),
+                        "message": f"Unknown message type: {message.get('type')}",
                         "timestamp": datetime.now().isoformat()
                     }))
-            
+                    
+            except asyncio.TimeoutError:
+                # Send ping to check connection health
+                await websocket.send_text(json.dumps({
+                    "type": "ping",
+                    "timestamp": datetime.now().isoformat()
+                }))
+                
     except WebSocketDisconnect:
         logger.info(f"WebSocket disconnected for session: {session_id}")
         active_connections.pop(session_id, None)
     except Exception as e:
-        logger.error(f"WebSocket error: {e}")
+        logger.error(f"WebSocket error for session {session_id}: {e}")
         active_connections.pop(session_id, None)
+        try:
+            await websocket.close()
+        except:
+            pass
 
 if __name__ == "__main__":
     import uvicorn
