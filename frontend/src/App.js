@@ -548,6 +548,8 @@ function App() {
               <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs ${
                 isConnected 
                   ? 'bg-green-100 text-green-800' 
+                  : connectionStatus === 'fallback'
+                  ? 'bg-yellow-100 text-yellow-800'
                   : 'bg-red-100 text-red-800'
               }`}>
                 {isConnected ? (
@@ -557,7 +559,8 @@ function App() {
                 )}
                 <span>
                   {connectionStatus === 'connecting' ? 'Connecting...' : 
-                   connectionStatus === 'connected' ? 'Connected' : 
+                   connectionStatus === 'connected' ? 'Real-time' : 
+                   connectionStatus === 'fallback' ? 'HTTP Mode' :
                    connectionStatus === 'error' ? 'Error' : 'Disconnected'}
                 </span>
               </div>
