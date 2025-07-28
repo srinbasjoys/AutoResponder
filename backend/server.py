@@ -25,6 +25,7 @@ import librosa
 import noisereduce as nr
 import soundfile as sf
 from scipy import signal
+import numpy as np
 
 # Load environment variables
 load_dotenv()
