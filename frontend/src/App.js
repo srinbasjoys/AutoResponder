@@ -276,6 +276,11 @@ function App() {
   };
 
   const startRecording = async () => {
+    if (!isConnected) {
+      alert('WebSocket not connected. Please wait for connection.');
+      return;
+    }
+    
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
@@ -293,7 +298,20 @@ function App() {
         const reader = new FileReader();
         reader.onloadend = async () => {
           const base64Audio = reader.result.split(',')[1];
-          await processAudio(base64Audio);
+          
+          // Send audio via WebSocket for real-time processing
+          const success = sendWebSocketMessage({
+            type: 'audio_data',
+            audio_data: base64Audio,
+            provider: currentProvider,
+            model: currentModel,
+            session_id: sessionId
+          });
+          
+          if (!success) {
+            // Fallback to HTTP if WebSocket fails
+            await processAudioHttp(base64Audio);
+          }
         };
         reader.readAsDataURL(audioBlob);
         
@@ -305,6 +323,8 @@ function App() {
       setIsRecording(true);
       setRecordingTime(0);
       setTranscribedText('');
+      setRealtimeTranscription('');
+      setAiThinking(false);
       
       // Start timer
       recordingTimerRef.current = setInterval(() => {
@@ -332,7 +352,8 @@ function App() {
     }
   };
 
-  const processAudio = async (audioData) => {
+  const processAudioHttp = async (audioData) => {
+    // Fallback HTTP processing (original implementation)
     setIsProcessing(true);
     try {
       const response = await axios.post(`${BACKEND_URL}/api/process-audio`, {
