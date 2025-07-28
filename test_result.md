@@ -53,8 +53,8 @@ Features needed:
 
 ## Current Status
 ✅ **COMPLETE**: AutoResponder AI Assistant with Web Search, Perplexity & Voice Capabilities!
-- Backend running on https://0f45ba20-82f6-4710-a507-772db0d5caf6.preview.emergentagent.com
-- Frontend running on https://0f45ba20-82f6-4710-a507-772db0d5caf6.preview.emergentagent.com
+- Backend running on https://5461dab9-7d73-43e7-ad36-8b79f1ba1503.preview.emergentagent.com
+- Frontend running on https://5461dab9-7d73-43e7-ad36-8b79f1ba1503.preview.emergentagent.com
 - Speech-to-text transcription working (fallback method)
 - LLM integration working with Groq API (updated to llama-3.1-8b-instant)
 - **✅ Perplexity integration fully operational with environment API key**
