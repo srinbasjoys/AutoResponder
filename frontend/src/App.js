@@ -730,61 +730,107 @@ function App() {
                   )}
                 </div>
 
-                {/* Status Text */}
-                <div className="text-center min-h-12">
+                {/* Enhanced Status Text with Production Features */}
+                <div className="text-center min-h-16">
                   {isProcessing && (
-                    <div className="flex items-center justify-center space-x-2 text-blue-600">
-                      <Zap className="w-4 h-4 animate-pulse" />
-                      <span className="font-medium">
-                        {aiThinking ? 'AI is thinking...' : 'Processing audio...'}
-                      </span>
+                    <div className="flex flex-col items-center justify-center space-y-2 text-blue-600">
+                      <div className="flex items-center space-x-2">
+                        <Zap className="w-4 h-4 animate-pulse" />
+                        <span className="font-medium">
+                          {aiThinking ? 'AI is thinking...' : 'Processing audio...'}
+                        </span>
+                      </div>
+                      {audioEnhancement.noise_reduction && (
+                        <div className="text-xs text-green-600 flex items-center space-x-1">
+                          <span>✨</span>
+                          <span>Audio enhancement active</span>
+                        </div>
+                      )}
                     </div>
                   )}
                   {isRecording && (
-                    <div className="flex items-center justify-center space-x-2 text-red-600">
-                      <div className="audio-visualizer">
-                        <div className="audio-bar"></div>
-                        <div className="audio-bar"></div>
-                        <div className="audio-bar"></div>
-                        <div className="audio-bar"></div>
-                        <div className="audio-bar"></div>
+                    <div className="flex flex-col items-center justify-center space-y-3 text-red-600">
+                      <div className="flex items-center justify-center space-x-2">
+                        <div className="audio-visualizer">
+                          <div className="audio-bar"></div>
+                          <div className="audio-bar"></div>
+                          <div className="audio-bar"></div>
+                          <div className="audio-bar"></div>
+                          <div className="audio-bar"></div>
+                        </div>
+                        <span className="font-medium ml-2">Recording...</span>
                       </div>
-                      <span className="font-medium ml-2">Recording...</span>
+                      <div className="text-xs text-gray-600 flex items-center space-x-4">
+                        {audioEnhancement.noise_reduction && (
+                          <span className="flex items-center space-x-1">
+                            <span>🔇</span>
+                            <span>Noise reduction: {Math.round(audioEnhancement.noise_reduction_strength * 100)}%</span>
+                          </span>
+                        )}
+                        {audioEnhancement.auto_gain_control && (
+                          <span className="flex items-center space-x-1">
+                            <span>📢</span>
+                            <span>Auto gain</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
                   )}
                   {!isRecording && !isProcessing && (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <p className="text-gray-500">
                         Press and hold to start recording
                       </p>
-                      {connectionStatus === 'fallback' && (
-                        <p className="text-yellow-600 text-sm">
-                          Running in HTTP mode - fully functional
-                        </p>
-                      )}
-                      {isConnected && (
-                        <p className="text-green-600 text-sm">
-                          Real-time WebSocket mode active
-                        </p>
-                      )}
+                      <div className="flex flex-col items-center space-y-2">
+                        {connectionStatus === 'fallback' && (
+                          <p className="text-yellow-600 text-sm">
+                            Running in HTTP mode - fully functional
+                          </p>
+                        )}
+                        {isConnected && (
+                          <p className="text-green-600 text-sm">
+                            Real-time WebSocket mode active
+                          </p>
+                        )}
+                        
+                        {/* Audio Enhancement Status */}
+                        <div className="flex items-center space-x-2 text-xs text-gray-500">
+                          <span>Audio:</span>
+                          {audioEnhancement.noise_reduction ? (
+                            <span className="audio-quality-indicator audio-quality-high">
+                              Enhanced ({Math.round(audioEnhancement.noise_reduction_strength * 100)}% NR)
+                            </span>
+                          ) : (
+                            <span className="audio-quality-indicator audio-quality-medium">
+                              Standard
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
                   
                   {/* Show real-time transcription */}
                   {realtimeTranscription && (
-                    <div className="mt-2 p-3 bg-yellow-50 rounded-lg">
+                    <div className="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                       <p className="text-sm text-yellow-800">
                         <strong>Listening:</strong> "{realtimeTranscription}"
                       </p>
                     </div>
                   )}
                   
-                  {/* Show final transcribed text */}
+                  {/* Show final transcribed text with enhancement info */}
                   {transcribedText && !isProcessing && (
-                    <div className="mt-2 p-3 bg-blue-50 rounded-lg">
+                    <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
                       <p className="text-sm text-blue-800">
                         <strong>You said:</strong> "{transcribedText}"
                       </p>
+                      {audioEnhancement.noise_reduction && (
+                        <p className="text-xs text-green-600 mt-1 flex items-center space-x-1">
+                          <span>✨</span>
+                          <span>Enhanced with noise cancellation</span>
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
