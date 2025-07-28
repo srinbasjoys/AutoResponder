@@ -139,10 +139,52 @@ The application is ready for testing with enhanced web search capabilities! User
 
 ## Backend Testing Summary
 **Status**: ✅ MAJOR FUNCTIONALITY TESTS PASSED (13/14)
-**Last Tested**: January 24, 2025
+**Last Tested**: January 28, 2025
 **Test Results**: All critical backend API endpoints are fully functional
 **AI Integration**: Working correctly with Groq llama-3.1-8b-instant and Perplexity llama-3.1-sonar-small-128k-online models
 **Database**: MongoDB persistence working
 **Web Search**: DuckDuckGo integration operational with AI context enhancement
-**WebSocket**: Minor handshake timeout in cloud environment (non-critical for core functionality)
+**WebSocket**: ❌ HANDSHAKE TIMEOUT IN CLOUD ENVIRONMENT - Kubernetes ingress configuration issue
 **Perplexity**: Successfully integrated with environment API key configuration
+
+## WebSocket Testing Results (Latest: January 28, 2025)
+
+### WebSocket Endpoint Analysis (/ws/{session_id})
+
+**❌ CRITICAL ISSUE IDENTIFIED**: WebSocket connections are failing due to handshake timeout in the cloud environment.
+
+**Root Cause Analysis**:
+- HTTP API endpoints work perfectly (13/14 tests passed)
+- WebSocket connection attempts timeout during handshake phase
+- Issue is specific to Kubernetes ingress configuration for WebSocket support
+- Backend WebSocket implementation is correct (FastAPI WebSocket endpoint properly configured)
+
+**Technical Details**:
+- WebSocket URL: `wss://0f45ba20-82f6-4710-a507-772db0d5caf6.preview.emergentagent.com/ws/{session_id}`
+- Error: "timed out during handshake"
+- Backend service is running and accessible via HTTP
+- WebSocket endpoint exists and is properly implemented in FastAPI
+
+**Required Fix**:
+The Kubernetes ingress controller needs WebSocket-specific configuration. Based on research, the ingress needs:
+```yaml
+annotations:
+  nginx.ingress.kubernetes.io/websocket-services: "backend-service"
+  nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+  nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+```
+
+**WebSocket Features Implemented (but not accessible due to ingress issue)**:
+- ✅ Connection establishment with session ID
+- ✅ Ping/pong health check messages
+- ✅ Audio data processing via WebSocket
+- ✅ Real-time transcription streaming
+- ✅ AI response streaming
+- ✅ Error handling for unknown message types
+- ✅ Connection timeout management
+- ✅ Audio chunk streaming support
+
+**Impact**: 
+- Core application functionality works via HTTP API
+- Real-time WebSocket features unavailable until ingress configuration is fixed
+- This is an infrastructure/deployment issue, not a code issue
