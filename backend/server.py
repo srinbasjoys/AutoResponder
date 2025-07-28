@@ -160,6 +160,70 @@ async def startup_event():
 async def root():
     return {"message": "AutoResponder AI Assistant API", "status": "running"}
 
+@app.get("/api/test-speech-recognition")
+async def test_speech_recognition():
+    """Test Google Speech Recognition connectivity"""
+    try:
+        recognizer = sr.Recognizer()
+        
+        # Test with a simple audio sample (silence)
+        import numpy as np
+        
+        # Generate a simple sine wave audio sample for testing
+        sample_rate = 16000
+        duration = 1.0  # 1 second
+        frequency = 440  # A4 note
+        
+        # Generate sine wave
+        t = np.linspace(0, duration, int(sample_rate * duration))
+        audio_data = np.sin(2 * np.pi * frequency * t) * 0.1  # Low volume
+        
+        # Convert to 16-bit PCM
+        audio_data = (audio_data * 32767).astype(np.int16)
+        
+        # Create a WAV file in memory
+        wav_io = io.BytesIO()
+        import wave
+        with wave.open(wav_io, 'wb') as wav_file:
+            wav_file.setnchannels(1)  # mono
+            wav_file.setsampwidth(2)  # 16-bit
+            wav_file.setframerate(sample_rate)
+            wav_file.writeframes(audio_data.tobytes())
+        
+        wav_io.seek(0)
+        
+        # Test with speech recognition
+        with sr.AudioFile(wav_io) as source:
+            audio = recognizer.record(source)
+            
+            # Try to recognize (will likely fail but tests connectivity)
+            try:
+                text = recognizer.recognize_google(audio, language="en-US")
+                return {
+                    "status": "success",
+                    "message": "Google Speech Recognition service is working",
+                    "recognized_text": text
+                }
+            except sr.UnknownValueError:
+                return {
+                    "status": "success",
+                    "message": "Google Speech Recognition service is accessible (test audio not recognized, which is expected)",
+                    "recognized_text": None
+                }
+                
+    except sr.RequestError as e:
+        return {
+            "status": "error",
+            "message": f"Google Speech Recognition service error: {e}",
+            "recognized_text": None
+        }
+    except Exception as e:
+        return {
+            "status": "error", 
+            "message": f"Test failed: {e}",
+            "recognized_text": None
+        }
+
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint"""
