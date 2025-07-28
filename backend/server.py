@@ -719,12 +719,19 @@ async def stream_ai_response(websocket: WebSocket, user_input: str, session_id: 
 
 @app.post("/api/process-audio")
 async def process_audio(request: AudioProcessRequest):
-    """Process audio input and generate AI response"""
+    """Process audio input with noise cancellation and generate AI response"""
     try:
         logger.info(f"Processing audio for session {request.session_id} with {request.provider}/{request.model}")
+        logger.info(f"Noise reduction settings - enabled: {request.noise_reduction}, strength: {request.noise_reduction_strength}")
         
-        # Transcribe audio
-        user_input = await transcribe_audio_with_whisper(request.audio_data)
+        # Transcribe audio with noise cancellation
+        user_input = await transcribe_audio_with_whisper(
+            request.audio_data,
+            noise_reduction=request.noise_reduction,
+            noise_reduction_strength=request.noise_reduction_strength,
+            auto_gain_control=request.auto_gain_control,
+            high_pass_filter=request.high_pass_filter
+        )
         logger.info(f"Transcribed text: {user_input}")
         
         if not user_input or user_input.strip() == "":
@@ -743,7 +750,13 @@ async def process_audio(request: AudioProcessRequest):
             "ai_response": ai_response,
             "timestamp": datetime.now(),
             "provider": request.provider,
-            "model": request.model
+            "model": request.model,
+            "audio_enhancement": {
+                "noise_reduction": request.noise_reduction,
+                "noise_reduction_strength": request.noise_reduction_strength,
+                "auto_gain_control": request.auto_gain_control,
+                "high_pass_filter": request.high_pass_filter
+            }
         }
         
         await db.conversations.insert_one(conversation_data)
@@ -753,7 +766,8 @@ async def process_audio(request: AudioProcessRequest):
             "user_input": user_input,
             "ai_response": ai_response,
             "provider": request.provider,
-            "model": request.model
+            "model": request.model,
+            "audio_enhancement": conversation_data["audio_enhancement"]
         }
         
     except Exception as e:
