@@ -1408,7 +1408,7 @@ class BackendTester:
         print("🚀 Starting AutoResponder Backend API Tests")
         print("=" * 60)
         
-        # Test sequence - prioritizing noise cancellation and audio enhancement tests as requested
+        # Test sequence - prioritizing continuous listening functionality as requested
         tests = [
             ("Health Check", self.test_health_endpoint),
             ("Models Endpoint", self.test_models_endpoint),
@@ -1417,12 +1417,21 @@ class BackendTester:
             ("Get Providers", self.test_get_providers),
             ("Providers Endpoint (Perplexity)", self.test_providers_endpoint_includes_perplexity),
             
-            # NEW AUDIO ENHANCEMENT CONFIGURATION ENDPOINTS - HIGH PRIORITY
+            # CONTINUOUS LISTENING FUNCTIONALITY TESTS - MAIN FOCUS
+            ("Start Listening Endpoint", self.test_start_listening_endpoint),
+            ("Continuous Audio Processing (Groq)", self.test_continuous_audio_processing_groq),
+            ("Continuous Audio Processing (Perplexity)", self.test_continuous_audio_processing_perplexity),
+            ("Conversation State Polling", self.test_conversation_state_polling),
+            ("Stop Listening Endpoint", self.test_stop_listening_endpoint),
+            ("Continuous Listening Conversation Persistence", self.test_continuous_listening_conversation_persistence),
+            ("Mock Implementation Replaced", self.test_mock_implementation_replaced),
+            
+            # AUDIO ENHANCEMENT CONFIGURATION ENDPOINTS
             ("Audio Enhancement Config Save", self.test_audio_enhancement_config_save),
             ("Audio Enhancement Config Get", self.test_audio_enhancement_config_get),
             ("Audio Stats", self.test_audio_stats),
             
-            # NOISE CANCELLATION & AUDIO ENHANCEMENT TESTS - MAIN FOCUS
+            # NOISE CANCELLATION & AUDIO ENHANCEMENT TESTS
             ("Speech Recognition Connectivity", self.test_speech_recognition_connectivity),
             ("Audio Transcription Fallback", self.test_audio_transcription_fallback),
             ("Process Audio", self.test_process_audio),
