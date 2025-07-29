@@ -1280,6 +1280,22 @@ processing_lock = threading.Lock()
 
 def background_processor():
     """Background thread for processing audio chunks"""
+    import asyncio
+    
+    def run_async_task(task_data):
+        """Run async task in event loop"""
+        try:
+            # Create new event loop for this thread
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            # Run the async function
+            loop.run_until_complete(process_audio_chunk_sync(task_data))
+            
+            loop.close()
+        except Exception as e:
+            logger.error(f"Error in async task: {e}")
+    
     while True:
         try:
             task = processing_queue.get(timeout=1.0)
@@ -1287,7 +1303,7 @@ def background_processor():
             if task['type'] == 'process_audio':
                 # Process in thread to avoid blocking
                 threading.Thread(
-                    target=process_audio_chunk_sync,
+                    target=run_async_task,
                     args=(task['data'],),
                     daemon=True
                 ).start()
