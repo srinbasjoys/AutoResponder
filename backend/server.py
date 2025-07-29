@@ -1299,8 +1299,8 @@ def background_processor():
         except Exception as e:
             logger.error(f"Error in background processor: {e}")
 
-def process_audio_chunk_sync(data: Dict[str, Any]):
-    """Process audio chunk synchronously"""
+async def process_audio_chunk_sync(data: Dict[str, Any]):
+    """Process audio chunk synchronously with real transcription and AI response"""
     try:
         session_id = data['session_id']
         audio_chunk = data['audio_chunk']
@@ -1314,40 +1314,88 @@ def process_audio_chunk_sync(data: Dict[str, Any]):
                 state.chunk_count += 1
                 state.last_activity = time.time()
         
-        # Process transcription (simulate for now)
+        # Process real transcription using existing pipeline
         if audio_chunk:
-            transcription = f"Transcribed audio chunk {len(audio_chunk)//100}"
+            logger.info(f"Processing real audio transcription for session {session_id}")
+            
+            # Use the existing transcription pipeline with noise cancellation
+            transcription = await transcribe_audio_with_whisper(
+                audio_chunk,
+                noise_reduction=True,
+                noise_reduction_strength=0.7,
+                auto_gain_control=True,
+                high_pass_filter=True
+            )
+            
+            logger.info(f"Transcription result: {transcription}")
             
             with processing_lock:
                 if session_id in conversation_states:
                     state = conversation_states[session_id]
                     
-                    if is_final:
-                        state.current_transcription = transcription
-                        state.partial_transcription = ""
-                        
-                        # Simulate AI response
-                        ai_response = f"I heard: '{transcription}'. How can I help you?"
-                        state.ai_response = ai_response
-                        state.is_responding = True
-                        
-                        # Store response for polling
-                        session_responses[session_id]['transcription'] = transcription
-                        session_responses[session_id]['ai_response'] = ai_response
-                        session_responses[session_id]['timestamp'] = time.time()
+                    if is_final and transcription and transcription.strip():
+                        # Only process if we have meaningful transcription
+                        if not transcription.startswith("Could not understand") and not transcription.startswith("Error"):
+                            state.current_transcription = transcription
+                            state.partial_transcription = ""
+                            
+                            # Get real AI response using existing pipeline
+                            logger.info(f"Getting AI response from {state.provider}/{state.model}")
+                            ai_response = await get_ai_response(
+                                transcription, 
+                                session_id, 
+                                state.provider, 
+                                state.model
+                            )
+                            
+                            logger.info(f"AI response: {ai_response}")
+                            state.ai_response = ai_response
+                            state.is_responding = True
+                            
+                            # Store response for polling
+                            session_responses[session_id]['transcription'] = transcription
+                            session_responses[session_id]['ai_response'] = ai_response
+                            session_responses[session_id]['timestamp'] = time.time()
+                            
+                            # Save conversation to database
+                            conversation_id = str(uuid.uuid4())
+                            conversation_data = {
+                                "id": conversation_id,
+                                "session_id": session_id,
+                                "user_input": transcription,
+                                "ai_response": ai_response,
+                                "timestamp": datetime.now(),
+                                "provider": state.provider,
+                                "model": state.model,
+                                "continuous_listening": True
+                            }
+                            
+                            await db.conversations.insert_one(conversation_data)
+                            logger.info(f"Saved conversation to database: {conversation_id}")
+                            
+                        else:
+                            logger.warning(f"Transcription failed or unclear: {transcription}")
+                            state.current_transcription = ""
+                            state.ai_response = "I couldn't understand that clearly. Please try speaking again."
+                            session_responses[session_id]['ai_response'] = state.ai_response
+                            session_responses[session_id]['timestamp'] = time.time()
                         
                     else:
-                        state.partial_transcription = transcription
-                        session_responses[session_id]['partial_transcription'] = transcription
-                        session_responses[session_id]['timestamp'] = time.time()
+                        # Partial transcription (for non-final chunks)
+                        if transcription and not transcription.startswith("Error"):
+                            state.partial_transcription = transcription
+                            session_responses[session_id]['partial_transcription'] = transcription
+                            session_responses[session_id]['timestamp'] = time.time()
                     
                     state.is_processing = False
+                    state.is_responding = False
                     
     except Exception as e:
         logger.error(f"Error processing audio chunk: {e}")
         with processing_lock:
             if session_id in conversation_states:
                 conversation_states[session_id].is_processing = False
+                conversation_states[session_id].is_responding = False
 
 # Start background processor
 background_thread = threading.Thread(target=background_processor, daemon=True)
