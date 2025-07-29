@@ -53,8 +53,8 @@ Features needed:
 
 ## Current Status
 ✅ **COMPLETE**: AutoResponder AI Assistant with Web Search, Perplexity & Voice Capabilities!
-- Backend running on https://51c2147d-62be-487e-ba68-4248dbff2304.preview.emergentagent.com
-- Frontend running on https://51c2147d-62be-487e-ba68-4248dbff2304.preview.emergentagent.com
+- Backend running on https://b8dbe72f-8d81-45fb-a90a-90537128a55e.preview.emergentagent.com
+- Frontend running on https://b8dbe72f-8d81-45fb-a90a-90537128a55e.preview.emergentagent.com
 - Speech-to-text transcription working (fallback method)
 - LLM integration working with Groq API (updated to llama-3.1-8b-instant)
 - **✅ Perplexity integration fully operational with environment API key**
@@ -330,7 +330,7 @@ annotations:
 
 **Testing Agent**: Backend/SDET Testing Agent  
 **Test Date**: January 28, 2025  
-**Test Environment**: Production URL (https://51c2147d-62be-487e-ba68-4248dbff2304.preview.emergentagent.com)  
+**Test Environment**: Production URL (https://b8dbe72f-8d81-45fb-a90a-90537128a55e.preview.emergentagent.com)  
 **Test Focus**: Audio processing functionality after recent fixes
 
 ### All Audio Processing Features Tested Successfully ✅
@@ -392,7 +392,7 @@ annotations:
 
 **Testing Agent**: Backend/SDET Testing Agent  
 **Test Date**: January 28, 2025  
-**Test Environment**: Production URL (https://51c2147d-62be-487e-ba68-4248dbff2304.preview.emergentagent.com)  
+**Test Environment**: Production URL (https://b8dbe72f-8d81-45fb-a90a-90537128a55e.preview.emergentagent.com)  
 **Test Focus**: Comprehensive noise cancellation and audio enhancement features testing
 
 ### All Noise Cancellation & Audio Enhancement Features Tested Successfully ✅
