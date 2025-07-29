@@ -602,6 +602,15 @@ function App() {
                 <Mic className="w-5 h-5 text-gray-600" />
               </button>
               <button
+                onClick={() => setShowContinuousListening(!showContinuousListening)}
+                className={`p-2 hover:bg-gray-100 rounded-lg transition-colors ${
+                  showContinuousListening ? 'bg-green-100' : ''
+                }`}
+                title="Continuous Listening Mode"
+              >
+                <Activity className="w-5 h-5 text-gray-600" />
+              </button>
+              <button
                 onClick={clearConversations}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 title="Clear Conversation"
