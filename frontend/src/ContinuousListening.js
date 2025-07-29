@@ -36,7 +36,7 @@ const ContinuousListening = ({
   const voiceActivityRef = useRef(null);
   
   // Backend URL
-  const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://b8dbe72f-8d81-45fb-a90a-90537128a55e.preview.emergentagent.com';
+  const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://bcb9b9e6-bbfb-40aa-b131-31580469d074.preview.emergentagent.com';
   
   // Voice activity detection
   const detectVoiceActivity = () => {

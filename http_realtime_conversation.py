@@ -459,7 +459,7 @@ class HTTPRealTimeConversation:
 
 # Global instance
 http_realtime = HTTPRealTimeConversation(
-    backend_url="https://b8dbe72f-8d81-45fb-a90a-90537128a55e.preview.emergentagent.com"
+    backend_url="https://bcb9b9e6-bbfb-40aa-b131-31580469d074.preview.emergentagent.com"
 )
 
 # Example usage and testing
