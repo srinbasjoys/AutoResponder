@@ -634,6 +634,30 @@ function App() {
           {/* Main Recording Interface */}
           <div className="lg:col-span-2 space-y-8">
             
+            {/* Continuous Listening Component */}
+            <ContinuousListening 
+              currentProvider={currentProvider}
+              currentModel={currentModel}
+              onTranscription={(text) => setTranscribedText(text)}
+              onAIResponse={(response) => {
+                // Add to conversations
+                setConversations(prev => [...prev, {
+                  id: Date.now(),
+                  user_input: transcribedText,
+                  ai_response: response,
+                  provider: currentProvider,
+                  model: currentModel,
+                  timestamp: new Date()
+                }]);
+                
+                // Auto-speak if enabled
+                if (autoSpeak) {
+                  speakText(response);
+                }
+              }}
+              isVisible={showContinuousListening}
+            />
+            
             {/* Voice Assistant Section */}
             <div className="bg-white rounded-2xl shadow-lg p-8">
               <div className="text-center mb-8">
@@ -641,7 +665,7 @@ function App() {
                   Voice Assistant
                 </h2>
                 <p className="text-gray-600">
-                  Hold the button to record up to 30 seconds of audio
+                  {showContinuousListening ? 'Real-time conversation mode' : 'Hold the button to record up to 30 seconds of audio'}
                 </p>
               </div>
 
