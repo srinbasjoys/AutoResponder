@@ -1207,6 +1207,408 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
         except:
             pass
 
+# HTTP Real-Time Conversation System
+from typing import Dict, Any
+import threading
+import queue
+from collections import defaultdict
+from dataclasses import dataclass
+import time
+
+@dataclass
+class ConversationState:
+    session_id: str
+    is_listening: bool = False
+    is_processing: bool = False
+    is_responding: bool = False
+    current_transcription: str = ""
+    partial_transcription: str = ""
+    ai_response: str = ""
+    provider: str = "groq"
+    model: str = "llama-3.1-8b-instant"
+    last_activity: float = 0.0
+    audio_chunks: list = None
+    chunk_count: int = 0
+    conversation_started: float = 0.0
+    voice_activity_detected: bool = False
+    can_interrupt: bool = True
+    
+    def __post_init__(self):
+        if self.audio_chunks is None:
+            self.audio_chunks = []
+        if self.last_activity == 0.0:
+            self.last_activity = time.time()
+        if self.conversation_started == 0.0:
+            self.conversation_started = time.time()
+
+class ContinuousListeningRequest(BaseModel):
+    session_id: str
+    provider: str
+    model: str
+    audio_chunk: str  # base64 encoded audio chunk
+    chunk_index: int
+    is_final: bool = False
+    voice_activity_detected: bool = True
+    noise_reduction: bool = True
+    noise_reduction_strength: float = 0.7
+    auto_gain_control: bool = True
+    high_pass_filter: bool = True
+
+class StartListeningRequest(BaseModel):
+    session_id: str
+    provider: str
+    model: str
+    continuous_mode: bool = True
+    max_duration: int = 300  # 5 minutes max
+    voice_activity_threshold: float = 0.3
+    silence_timeout: int = 3  # seconds
+
+class StopListeningRequest(BaseModel):
+    session_id: str
+    reason: str = "user_stopped"
+
+class InterruptConversationRequest(BaseModel):
+    session_id: str
+    new_audio_chunk: str
+    reason: str = "user_interrupt"
+
+# Global state for HTTP real-time system
+conversation_states: Dict[str, ConversationState] = {}
+processing_queue = queue.Queue()
+session_responses: Dict[str, Dict[str, Any]] = defaultdict(dict)
+processing_lock = threading.Lock()
+
+def background_processor():
+    """Background thread for processing audio chunks"""
+    while True:
+        try:
+            task = processing_queue.get(timeout=1.0)
+            
+            if task['type'] == 'process_audio':
+                # Process in thread to avoid blocking
+                threading.Thread(
+                    target=process_audio_chunk_sync,
+                    args=(task['data'],),
+                    daemon=True
+                ).start()
+            
+            processing_queue.task_done()
+            
+        except queue.Empty:
+            continue
+        except Exception as e:
+            logger.error(f"Error in background processor: {e}")
+
+def process_audio_chunk_sync(data: Dict[str, Any]):
+    """Process audio chunk synchronously"""
+    try:
+        session_id = data['session_id']
+        audio_chunk = data['audio_chunk']
+        is_final = data['is_final']
+        
+        with processing_lock:
+            if session_id in conversation_states:
+                state = conversation_states[session_id]
+                state.is_processing = True
+                state.audio_chunks.append(audio_chunk)
+                state.chunk_count += 1
+                state.last_activity = time.time()
+        
+        # Process transcription (simulate for now)
+        if audio_chunk:
+            transcription = f"Transcribed audio chunk {len(audio_chunk)//100}"
+            
+            with processing_lock:
+                if session_id in conversation_states:
+                    state = conversation_states[session_id]
+                    
+                    if is_final:
+                        state.current_transcription = transcription
+                        state.partial_transcription = ""
+                        
+                        # Simulate AI response
+                        ai_response = f"I heard: '{transcription}'. How can I help you?"
+                        state.ai_response = ai_response
+                        state.is_responding = True
+                        
+                        # Store response for polling
+                        session_responses[session_id]['transcription'] = transcription
+                        session_responses[session_id]['ai_response'] = ai_response
+                        session_responses[session_id]['timestamp'] = time.time()
+                        
+                    else:
+                        state.partial_transcription = transcription
+                        session_responses[session_id]['partial_transcription'] = transcription
+                        session_responses[session_id]['timestamp'] = time.time()
+                    
+                    state.is_processing = False
+                    
+    except Exception as e:
+        logger.error(f"Error processing audio chunk: {e}")
+        with processing_lock:
+            if session_id in conversation_states:
+                conversation_states[session_id].is_processing = False
+
+# Start background processor
+background_thread = threading.Thread(target=background_processor, daemon=True)
+background_thread.start()
+
+@app.post("/api/start-listening")
+async def start_continuous_listening(request: StartListeningRequest):
+    """Start continuous listening session"""
+    try:
+        session_id = request.session_id
+        
+        # Initialize conversation state
+        state = ConversationState(
+            session_id=session_id,
+            is_listening=True,
+            provider=request.provider,
+            model=request.model,
+            conversation_started=time.time()
+        )
+        
+        conversation_states[session_id] = state
+        
+        logger.info(f"Started listening session: {session_id}")
+        
+        return {
+            "session_id": session_id,
+            "status": "listening",
+            "continuous_mode": request.continuous_mode,
+            "max_duration": request.max_duration,
+            "message": "Listening started - send audio chunks to /api/continuous-audio"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error starting listening: {e}")
+        raise HTTPException(status_code=500, detail="Failed to start listening")
+
+@app.post("/api/stop-listening")
+async def stop_continuous_listening(request: StopListeningRequest):
+    """Stop continuous listening session"""
+    try:
+        session_id = request.session_id
+        
+        if session_id in conversation_states:
+            state = conversation_states[session_id]
+            state.is_listening = False
+            
+            # Process any remaining audio chunks
+            if state.audio_chunks:
+                processing_queue.put({
+                    'type': 'process_audio',
+                    'data': {
+                        'session_id': session_id,
+                        'audio_chunk': ''.join(state.audio_chunks),
+                        'is_final': True
+                    }
+                })
+        
+        logger.info(f"Stopped listening session: {session_id}")
+        
+        return {
+            "session_id": session_id,
+            "status": "stopped",
+            "reason": request.reason,
+            "message": "Listening stopped"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error stopping listening: {e}")
+        raise HTTPException(status_code=500, detail="Failed to stop listening")
+
+@app.post("/api/continuous-audio")
+async def process_continuous_audio(request: ContinuousListeningRequest):
+    """Process continuous audio chunk"""
+    try:
+        session_id = request.session_id
+        
+        if session_id not in conversation_states:
+            raise HTTPException(
+                status_code=404, 
+                detail="Session not found. Start listening first."
+            )
+        
+        state = conversation_states[session_id]
+        
+        if not state.is_listening:
+            raise HTTPException(
+                status_code=400,
+                detail="Session is not in listening mode"
+            )
+        
+        # Update voice activity
+        state.voice_activity_detected = request.voice_activity_detected
+        state.last_activity = time.time()
+        
+        # Queue audio processing
+        processing_queue.put({
+            'type': 'process_audio',
+            'data': {
+                'session_id': session_id,
+                'audio_chunk': request.audio_chunk,
+                'is_final': request.is_final,
+                'chunk_index': request.chunk_index
+            }
+        })
+        
+        return {
+            "session_id": session_id,
+            "chunk_index": request.chunk_index,
+            "status": "processing" if state.is_processing else "queued",
+            "voice_activity": request.voice_activity_detected,
+            "message": "Audio chunk queued for processing"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error processing continuous audio: {e}")
+        raise HTTPException(status_code=500, detail="Failed to process audio")
+
+@app.get("/api/conversation-state/{session_id}")
+async def get_conversation_state(session_id: str):
+    """Get current conversation state"""
+    try:
+        if session_id not in conversation_states:
+            raise HTTPException(
+                status_code=404,
+                detail="Session not found"
+            )
+        
+        state = conversation_states[session_id]
+        
+        # Get latest responses
+        responses = session_responses.get(session_id, {})
+        
+        return {
+            "session_id": session_id,
+            "is_listening": state.is_listening,
+            "is_processing": state.is_processing,
+            "is_responding": state.is_responding,
+            "current_transcription": state.current_transcription,
+            "partial_transcription": state.partial_transcription,
+            "ai_response": state.ai_response,
+            "provider": state.provider,
+            "model": state.model,
+            "last_activity": state.last_activity,
+            "chunk_count": state.chunk_count,
+            "conversation_started": state.conversation_started,
+            "voice_activity_detected": state.voice_activity_detected,
+            "can_interrupt": state.can_interrupt,
+            "latest_responses": responses
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting conversation state: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get conversation state")
+
+@app.post("/api/interrupt-conversation")
+async def interrupt_conversation(request: InterruptConversationRequest):
+    """Interrupt current conversation with new audio"""
+    try:
+        session_id = request.session_id
+        
+        if session_id not in conversation_states:
+            raise HTTPException(
+                status_code=404,
+                detail="Session not found"
+            )
+        
+        state = conversation_states[session_id]
+        
+        if not state.can_interrupt:
+            raise HTTPException(
+                status_code=400,
+                detail="Conversation cannot be interrupted at this time"
+            )
+        
+        # Stop current processing
+        state.is_processing = False
+        state.is_responding = False
+        state.ai_response = ""
+        
+        # Process interruption audio
+        processing_queue.put({
+            'type': 'process_audio',
+            'data': {
+                'session_id': session_id,
+                'audio_chunk': request.new_audio_chunk,
+                'is_final': True
+            }
+        })
+        
+        logger.info(f"Interrupted conversation: {session_id}")
+        
+        return {
+            "session_id": session_id,
+            "status": "interrupted",
+            "reason": request.reason,
+            "message": "Conversation interrupted, processing new audio"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error interrupting conversation: {e}")
+        raise HTTPException(status_code=500, detail="Failed to interrupt conversation")
+
+@app.get("/api/stream-responses/{session_id}")
+async def stream_responses(session_id: str):
+    """Stream real-time responses (Server-Sent Events)"""
+    try:
+        if session_id not in conversation_states:
+            raise HTTPException(
+                status_code=404,
+                detail="Session not found"
+            )
+        
+        async def event_generator():
+            last_sent_time = 0
+            
+            while True:
+                try:
+                    state = conversation_states.get(session_id)
+                    if not state or not state.is_listening:
+                        break
+                    
+                    # Check for new responses
+                    responses = session_responses.get(session_id, {})
+                    current_time = responses.get('timestamp', 0)
+                    
+                    if current_time > last_sent_time:
+                        # Send update
+                        update = {
+                            "type": "update",
+                            "session_id": session_id,
+                            "timestamp": current_time,
+                            "transcription": responses.get('transcription', ''),
+                            "partial_transcription": responses.get('partial_transcription', ''),
+                            "ai_response": responses.get('ai_response', ''),
+                            "is_processing": state.is_processing,
+                            "is_responding": state.is_responding
+                        }
+                        
+                        yield f"data: {json.dumps(update)}\n\n"
+                        last_sent_time = current_time
+                    
+                    await asyncio.sleep(0.1)  # Check every 100ms
+                    
+                except Exception as e:
+                    logger.error(f"Error in stream: {e}")
+                    break
+        
+        return StreamingResponse(
+            event_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Access-Control-Allow-Origin": "*"
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Error streaming responses: {e}")
+        raise HTTPException(status_code=500, detail="Failed to stream responses")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
