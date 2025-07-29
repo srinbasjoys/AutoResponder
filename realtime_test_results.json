@@ -1,0 +1,239 @@
+{
+  "timestamp": "2025-07-29T05:18:28.207749",
+  "session_id": "test_session_1753766308",
+  "http_tests": {
+    "endpoint_tests": {
+      "health": {
+        "status": 200,
+        "success": true
+      },
+      "start_listening": {
+        "status": 200,
+        "success": true,
+        "response": {
+          "session_id": "test_session_1753766308",
+          "status": "listening",
+          "continuous_mode": true,
+          "max_duration": 300,
+          "message": "Listening started - send audio chunks to /api/continuous-audio"
+        }
+      },
+      "conversation_state": {
+        "status": 200,
+        "success": true,
+        "response": {
+          "session_id": "test_session_1753766308",
+          "is_listening": true,
+          "is_processing": false,
+          "is_responding": false,
+          "current_transcription": "",
+          "partial_transcription": "",
+          "ai_response": "",
+          "provider": "groq",
+          "model": "llama-3.1-8b-instant",
+          "last_activity": 1753766308.3485496,
+          "chunk_count": 0,
+          "conversation_started": 1753766308.3485408,
+          "voice_activity_detected": false,
+          "can_interrupt": true,
+          "latest_responses": {}
+        }
+      },
+      "continuous_audio": {
+        "status": 200,
+        "success": true,
+        "response": {
+          "session_id": "test_session_1753766308",
+          "chunk_index": 0,
+          "status": "queued",
+          "voice_activity": true,
+          "message": "Audio chunk queued for processing"
+        }
+      },
+      "stop_listening": {
+        "status": 200,
+        "success": true,
+        "response": {
+          "session_id": "test_session_1753766308",
+          "status": "stopped",
+          "reason": "test_complete",
+          "message": "Listening stopped"
+        }
+      }
+    },
+    "conversation_flow": {},
+    "status": "success"
+  },
+  "websocket_tests": {
+    "connection_test": {
+      "success": false,
+      "error": "timed out during handshake"
+    },
+    "message_exchange": {},
+    "status": "websocket_failed"
+  },
+  "conversation_flow_tests": {
+    "conversation_steps": [
+      {
+        "step": "start_listening",
+        "timestamp": 0.0799722671508789,
+        "success": true,
+        "response": {
+          "session_id": "test_session_1753766308",
+          "status": "listening",
+          "continuous_mode": true,
+          "max_duration": 300,
+          "message": "Listening started - send audio chunks to /api/continuous-audio"
+        }
+      },
+      {
+        "step": "audio_chunk_0",
+        "timestamp": 0.13528156280517578,
+        "success": true,
+        "response": {
+          "session_id": "test_session_1753766308",
+          "chunk_index": 0,
+          "status": "queued",
+          "voice_activity": true,
+          "message": "Audio chunk queued for processing"
+        }
+      },
+      {
+        "step": "state_check_0",
+        "timestamp": 0.18523502349853516,
+        "success": true,
+        "response": {
+          "session_id": "test_session_1753766308",
+          "is_listening": true,
+          "is_processing": false,
+          "is_responding": false,
+          "current_transcription": "",
+          "partial_transcription": "Transcribed audio chunk 0",
+          "ai_response": "",
+          "provider": "groq",
+          "model": "llama-3.1-8b-instant",
+          "last_activity": 1753766318.697901,
+          "chunk_count": 1,
+          "conversation_started": 1753766318.6423082,
+          "voice_activity_detected": true,
+          "can_interrupt": true,
+          "latest_responses": {
+            "transcription": "Transcribed audio chunk 0",
+            "ai_response": "I heard: 'Transcribed audio chunk 0'. How can I help you?",
+            "timestamp": 1753766318.697906,
+            "partial_transcription": "Transcribed audio chunk 0"
+          }
+        }
+      },
+      {
+        "step": "audio_chunk_1",
+        "timestamp": 0.741703987121582,
+        "success": true,
+        "response": {
+          "session_id": "test_session_1753766308",
+          "chunk_index": 1,
+          "status": "queued",
+          "voice_activity": true,
+          "message": "Audio chunk queued for processing"
+        }
+      },
+      {
+        "step": "state_check_1",
+        "timestamp": 0.7939848899841309,
+        "success": true,
+        "response": {
+          "session_id": "test_session_1753766308",
+          "is_listening": true,
+          "is_processing": false,
+          "is_responding": false,
+          "current_transcription": "",
+          "partial_transcription": "Transcribed audio chunk 0",
+          "ai_response": "",
+          "provider": "groq",
+          "model": "llama-3.1-8b-instant",
+          "last_activity": 1753766319.3050213,
+          "chunk_count": 2,
+          "conversation_started": 1753766318.6423082,
+          "voice_activity_detected": true,
+          "can_interrupt": true,
+          "latest_responses": {
+            "transcription": "Transcribed audio chunk 0",
+            "ai_response": "I heard: 'Transcribed audio chunk 0'. How can I help you?",
+            "timestamp": 1753766319.305026,
+            "partial_transcription": "Transcribed audio chunk 0"
+          }
+        }
+      },
+      {
+        "step": "audio_chunk_2",
+        "timestamp": 1.351078987121582,
+        "success": true,
+        "response": {
+          "session_id": "test_session_1753766308",
+          "chunk_index": 2,
+          "status": "queued",
+          "voice_activity": true,
+          "message": "Audio chunk queued for processing"
+        }
+      },
+      {
+        "step": "state_check_2",
+        "timestamp": 1.4031286239624023,
+        "success": true,
+        "response": {
+          "session_id": "test_session_1753766308",
+          "is_listening": true,
+          "is_processing": false,
+          "is_responding": true,
+          "current_transcription": "Transcribed audio chunk 0",
+          "partial_transcription": "",
+          "ai_response": "I heard: 'Transcribed audio chunk 0'. How can I help you?",
+          "provider": "groq",
+          "model": "llama-3.1-8b-instant",
+          "last_activity": 1753766319.9129646,
+          "chunk_count": 3,
+          "conversation_started": 1753766318.6423082,
+          "voice_activity_detected": true,
+          "can_interrupt": true,
+          "latest_responses": {
+            "transcription": "Transcribed audio chunk 0",
+            "ai_response": "I heard: 'Transcribed audio chunk 0'. How can I help you?",
+            "timestamp": 1753766319.912971,
+            "partial_transcription": "Transcribed audio chunk 0"
+          }
+        }
+      },
+      {
+        "step": "interrupt_conversation",
+        "timestamp": 1.9551301002502441,
+        "success": true,
+        "response": {
+          "session_id": "test_session_1753766308",
+          "status": "interrupted",
+          "reason": "user_interrupt",
+          "message": "Conversation interrupted, processing new audio"
+        }
+      },
+      {
+        "step": "stop_listening",
+        "timestamp": 2.0126867294311523,
+        "success": true,
+        "response": {
+          "session_id": "test_session_1753766308",
+          "status": "stopped",
+          "reason": "conversation_complete",
+          "message": "Listening stopped"
+        }
+      }
+    ],
+    "timing_analysis": {
+      "total_time": 2.012986660003662,
+      "successful_steps": 9,
+      "total_steps": 9,
+      "success_rate": 100.0,
+      "avg_response_time": 0.22366518444485134
+    },
+    "status": "success"
+  },
+  "overall_status": "success"
+}
