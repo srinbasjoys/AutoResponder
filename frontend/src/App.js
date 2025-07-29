@@ -50,6 +50,10 @@ function App() {
   const [realtimeTranscription, setRealtimeTranscription] = useState('');
   const [aiThinking, setAiThinking] = useState(false);
   
+  // Continuous listening mode
+  const [continuousMode, setContinuousMode] = useState(false);
+  const [showContinuousListening, setShowContinuousListening] = useState(false);
+  
   const mediaRecorderRef = useRef(null);
   const recordingTimerRef = useRef(null);
   const streamRef = useRef(null);
