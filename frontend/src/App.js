@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Settings, MessageCircle, Brain, Zap, Trash2, ChevronDown, Search, Globe, Volume2, VolumeX, Wifi, WifiOff } from 'lucide-react';
+import { Mic, MicOff, Settings, MessageCircle, Brain, Zap, Trash2, ChevronDown, Search, Globe, Volume2, VolumeX, Wifi, WifiOff, Activity } from 'lucide-react';
 import axios from 'axios';
+import ContinuousListening from './ContinuousListening';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 const WS_URL = BACKEND_URL.replace('https://', 'wss://').replace('http://', 'ws://');
