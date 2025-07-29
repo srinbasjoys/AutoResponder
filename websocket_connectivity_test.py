@@ -66,7 +66,6 @@ class WebSocketTester:
                     async with websockets.connect(
                         self.ws_url,
                         ssl=ssl_context,
-                        timeout=timeout,
                         ping_interval=20,
                         ping_timeout=10
                     ) as websocket:
