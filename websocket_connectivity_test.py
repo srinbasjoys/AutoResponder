@@ -152,7 +152,8 @@ class WebSocketTester:
                 async with websockets.connect(
                     protocol,
                     ssl=ssl_context if protocol.startswith("wss") else None,
-                    timeout=5
+                    ping_interval=20,
+                    ping_timeout=10
                 ) as websocket:
                     logger.info(f"✅ Protocol {protocol} works!")
                     return True
